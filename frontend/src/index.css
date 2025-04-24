@@ -1,0 +1,19 @@
+@import "tailwindcss/preflight";
+@tailwind utilities;
+
+/* Custom CSS */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+.gradient-bg {
+  background: linear-gradient(to right, #4f46e5, #3b82f6);
+}
+
+@import "tailwindcss";
+
