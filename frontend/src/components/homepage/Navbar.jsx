@@ -490,6 +490,31 @@ const Navbar = () => {
                           >
                             Your Profile
                           </Link>
+                          <Link 
+                            to="/dashboard" 
+                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                            onClick={() => setUserMenuOpen(false)}
+                          >
+                            Athlete Dashboard
+                          </Link>
+                          {userData?.userType?.toLowerCase() === 'coach' && (
+                            <Link 
+                              to="/coach-dashboard" 
+                              className="block px-4 py-2 text-sm text-orange-600 hover:bg-gray-100"
+                              onClick={() => setUserMenuOpen(false)}
+                            >
+                              Coach Dashboard
+                            </Link>
+                          )}
+                          {userData?.userType?.toLowerCase() === 'nutritionist' && (
+                            <Link 
+                              to="/nutritionist-dashboard" 
+                              className="block px-4 py-2 text-sm text-green-600 hover:bg-gray-100"
+                              onClick={() => setUserMenuOpen(false)}
+                            >
+                              Nutritionist Dashboard
+                            </Link>
+                          )}
                           <button 
                             onClick={handleLogout} 
                             className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
@@ -633,76 +658,47 @@ const Navbar = () => {
                 <motion.li
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.3, delay: 0.1 + navigationItems.length * 0.1 }}
-                  className="pt-4"
+                  transition={{ duration: 0.3, delay: 0.25 + navigationItems.length * 0.1 }}
                 >
                   {currentUser ? (
-                    <div className="space-y-4 p-4 bg-white/10 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        {currentUser.photoURL || (userData && userData.photoURL) ? (
-                          <img 
-                            src={userData?.photoURL || currentUser.photoURL} 
-                            alt="User avatar" 
-                            className="w-10 h-10 rounded-full object-cover border-2 border-white/50"
-                            crossOrigin="anonymous"
-                            referrerPolicy="no-referrer"
-                            onError={(e) => {
-                              console.error('Navbar profile image failed to load');
-                              e.target.onerror = null;
-                              // Try to fix Google photo URLs
-                              if (currentUser.photoURL && currentUser.photoURL.includes('googleusercontent.com') && !currentUser.photoURL.includes('?')) {
-                                e.target.src = `${currentUser.photoURL}?${Date.now()}`;
-                              } else {
-                                e.target.style.display = 'none';
-                                // Show the fallback instead
-                                const parent = e.target.parentNode;
-                                if (parent) {
-                                  const fallback = document.createElement('div');
-                                  fallback.className = "w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white font-medium";
-                                  fallback.textContent = userData?.name ? userData.name.charAt(0).toUpperCase() : 
-                                    currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 
-                                    currentUser.email ? currentUser.email.charAt(0).toUpperCase() : 'U';
-                                  parent.appendChild(fallback);
-                                }
-                              }
-                            }}
-                          />
-                        ) : (
-                          <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center text-blue-600 font-bold">
-                            {userData?.name ? userData.name.charAt(0).toUpperCase() : 
-                            currentUser.displayName ? currentUser.displayName.charAt(0).toUpperCase() : 
-                            currentUser.email ? currentUser.email.charAt(0).toUpperCase() : 'U'}
-                          </div>
-                        )}
-                        <div className="flex-1 min-w-0">
-                          <p className="text-white font-medium truncate">
-                            {userData?.name || currentUser.displayName || currentUser.email.split('@')[0]}
-                          </p>
-                          <p className="text-blue-100 text-sm truncate">
-                            {currentUser.email}
-                          </p>
-                        </div>
-                      </div>
-                      
-                      <div className="grid grid-cols-1 gap-2">
+                    <>
+                      {userData?.userType?.toLowerCase() === 'coach' && (
                         <Link 
-                          to="/profile"
-                          className="py-2 px-3 bg-white/20 hover:bg-white/30 text-white text-center rounded-lg transition-colors"
+                          to="/coach-dashboard" 
+                          className="bg-orange-500/80 hover:bg-orange-500 text-white py-2 px-4 rounded-lg transition-colors duration-200 flex items-center"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
-                          Profile
+                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                          </svg>
+                          Coach Dashboard
                         </Link>
-                      </div>
-                      
-                      <motion.button
-                        className="w-full py-2 px-3 bg-white text-red-600 font-medium rounded-lg transition-colors"
-                        onClick={handleLogout}
-                        whileHover={{ scale: 1.03 }}
-                        whileTap={{ scale: 0.97 }}
+                      )}
+                      {userData?.userType?.toLowerCase() === 'nutritionist' && (
+                        <Link 
+                          to="/nutritionist-dashboard" 
+                          className="bg-green-500/80 hover:bg-green-500 text-white py-2 px-4 rounded-lg transition-colors duration-200 flex items-center"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                          </svg>
+                          Nutritionist Dashboard
+                        </Link>
+                      )}
+                      <button 
+                        onClick={() => {
+                          handleLogout();
+                          setIsMobileMenuOpen(false);
+                        }}
+                        className="mt-4 text-white hover:bg-white/10 py-2 px-4 rounded-lg transition-colors duration-200 flex items-center"
                       >
-                        Sign Out
-                      </motion.button>
-                    </div>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Logout
+                      </button>
+                    </>
                   ) : (
                     <motion.div
                       whileHover={{ scale: 1.05 }}
