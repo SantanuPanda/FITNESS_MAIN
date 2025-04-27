@@ -139,11 +139,12 @@ export function AuthProvider({ children }) {
   }
 
   // Verify OTP function
-  async function verifyOtp(email, otp) {
+  async function verifyOtp(email, otp, purpose = 'verification') {
     try {
       const response = await axios.post(`${API_URL}/verify-otp`, { 
         email, 
-        otp 
+        otp,
+        purpose 
       });
       
       return { 
