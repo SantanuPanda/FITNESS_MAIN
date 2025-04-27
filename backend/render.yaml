@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: fitness-backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGODB_URI
+        value: mongodb+srv://ADMIN:Dyi5HSNTHNdiV0QD@test.doecbiu.mongodb.net/fitness
+      - key: JWT_SECRET
+        value: fitness_secret_key_123 
