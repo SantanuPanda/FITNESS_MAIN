@@ -3,6 +3,9 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import axios from 'axios';
 
+// API URL from environment variables or fallback to localhost
+const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/auth` : 'http://localhost:5000/api/auth';
+
 const AuthSuccessPage = () => {
   const [searchParams] = useSearchParams();
   const { setToken, setCurrentUser, setIsAuthenticated } = useAuth();
@@ -28,7 +31,7 @@ const AuthSuccessPage = () => {
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
         // Get user profile
-        const response = await axios.get('http://localhost:3000/api/auth/profile');
+        const response = await axios.get(`${API_URL}/profile`);
         setCurrentUser(response.data);
         setIsAuthenticated(true);
         

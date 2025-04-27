@@ -1,8 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
 
-// API URL
-const API_URL = 'http://localhost:5000/api/auth';
+// API URL from environment variables or fallback to localhost
+const API_URL = import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/auth` : 'http://localhost:5000/api/auth';
 
 // Create the authentication context
 const AuthContext = createContext();
