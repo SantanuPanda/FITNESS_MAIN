@@ -1,13 +1,18 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useRef, useEffect } from 'react';
+import emailjs from '@emailjs/browser';
 
-// Replace these with your actual EmailJS credentials
-// You need to create an account on emailjs.com and set up a service and template
-// const emailjsServiceId = "service_31tcv8d";
-// const emailjsTemplateId = "template_g7cn6hi";
-// const emailjsPublicKey = "u4zVgbosSNEw3TgIB"; // Public key
+// EmailJS credentials - ensure these are correctly set up in your EmailJS dashboard
+// Make sure your template has a "to_email" field set to santanupanda445@gmail.com
+const emailjsServiceId = "service_q7aibkg";
+const emailjsTemplateId = "template_30j29fs";
+const emailjsPublicKey = "Snnuu821p5tDq4Jv3";
+
+// Initialize EmailJS as early as possible
+emailjs.init(emailjsPublicKey);
 
 const ContactForm = () => {
+  const form = useRef();
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -26,70 +31,70 @@ const ContactForm = () => {
     setFormStatus({ ...formStatus, loading: true });
 
     try {
-      // Create a detailed HTML message body
-      const messageBody = `
-        <h2>New Message from Website Contact Form</h2>
-        <p><strong>From:</strong> ${formData.name}</p>
-        <p><strong>Email:</strong> ${formData.email}</p>
-        <p><strong>Subject:</strong> ${formData.subject || "N/A"}</p>
-        <p><strong>Message:</strong></p>
-        <p>${formData.message.replace(/\n/g, '<br>')}</p>
-        <hr>
-        <p><small>This message was sent from your website contact form.</small></p>
-      `;
-
-      // For security, use a server-side API endpoint instead of exposing SMTP credentials client-side
-      // This simulates form submission to a backend service
-      fetch('https://formsubmit.co/santanupanda445@gmail.com', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json'
-        },
-        body: JSON.stringify({
-          name: formData.name,
-          email: formData.email,
-          subject: formData.subject || "New contact form submission",
-          message: formData.message
-        })
-      })
-      .then(response => {
-        if (response.ok) {
-          console.log('Email sent successfully via FormSubmit.co!');
-          setFormStatus({ submitted: true, loading: false, error: null });
-          
-          // Reset form data after successful submission
-          setFormData({
-            name: '',
-            email: '',
-            subject: '',
-            message: ''
-          });
-        } else {
-          throw new Error('Failed to send message through FormSubmit.co');
-        }
-      })
-      .catch(error => {
-        console.error('FormSubmit.co error:', error);
-        setFormStatus({ 
-          submitted: false, 
-          loading: false, 
-          error: error.message || "Failed to send email. Please try again later." 
-        });
+      // Log the parameters for debugging
+      console.log('Sending email with:', {
+        serviceId: emailjsServiceId,
+        templateId: emailjsTemplateId,
+        publicKey: emailjsPublicKey
       });
+
+      // Prepare template parameters with a nicely formatted message
+      const templateParams = {
+        to_email: 'santanupanda445@gmail.com',
+        from_name: formData.name,
+        from_email: formData.email,
+        subject: formData.subject || "New message from Fit Fusion Contact Form",
+        message: formData.message,
+        // Include formatted content that matches the template format requested
+        formatted_content: `Hello Fit Fusion Team,
+
+You got a new message from: ${formData.name}
+
+${formData.message}
+
+The email has been sent from: ${formData.email}
+
+Regards,
+Fit Fusion Contact System`
+      };
+      
+      console.log('Template parameters:', templateParams);
+      
+      // Send email using EmailJS send method
+      const response = await emailjs.send(
+        emailjsServiceId,
+        emailjsTemplateId,
+        templateParams
+      );
+      
+      console.log('EmailJS Response:', response);
+      
+      if (response.status === 200) {
+        console.log('Email sent successfully via EmailJS!', response);
+        setFormStatus({ submitted: true, loading: false, error: null });
+        
+        // Reset form data after successful submission
+        setFormData({
+          name: '',
+          email: '',
+          subject: '',
+          message: ''
+        });
+      } else {
+        throw new Error(`Failed to send message through EmailJS: Status ${response.status}`);
+      }
     } catch (error) {
       console.error('Failed to send email:', error);
       setFormStatus({ 
         submitted: false, 
         loading: false, 
-        error: error.message || "Failed to send email. Please try again later." 
+        error: `${error.message || "Failed to send email"}. Please check console for details or try again later.` 
       });
     }
   };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -100,6 +105,7 @@ const ContactForm = () => {
 
   return (
     <motion.form
+      ref={form}
       initial={{ opacity: 0, y: 20 }}
       whileInView={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
@@ -170,7 +176,7 @@ const ContactForm = () => {
           placeholder="Tell us how we can help you..."
         />
       </div>
-
+      
       <motion.button
         whileHover={{ scale: 1.02, boxShadow: "0 10px 25px -5px rgba(124, 58, 237, 0.5)" }}
         whileTap={{ scale: 0.98 }}
@@ -189,7 +195,7 @@ const ContactForm = () => {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
             </svg>
-            <span>Message Sent!</span>
+            <span>Message Sent to the Fit Fusion Team!</span>
           </>
         ) : formStatus.loading ? (
           <>
@@ -212,6 +218,12 @@ const ContactForm = () => {
       {formStatus.error && (
         <div className="text-center text-sm text-red-500 mt-2">
           {formStatus.error}
+        </div>
+      )}
+      
+      {formStatus.submitted && (
+        <div className="text-center text-sm text-green-500 mt-2">
+          Your message has been sent to santanupanda445@gmail.com. Thank you for contacting us!
         </div>
       )}
       

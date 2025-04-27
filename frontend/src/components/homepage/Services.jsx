@@ -13,7 +13,7 @@ const ServiceCard = ({ title, description, imageUrl, features, index }) => {
     // Create a search query based on the service title
     const searchQuery = encodeURIComponent(`fitness ${title.toLowerCase()}`);
     // Open Google search in a new tab
-    window.open(`https://www.google.com/search?q=${searchQuery}`, '_blank');
+    window.open(`https://www.google.com/search?q=${ `what is`+ searchQuery}`, '_blank');
   };
 
   return (
