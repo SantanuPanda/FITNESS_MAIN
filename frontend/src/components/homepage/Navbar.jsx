@@ -490,31 +490,6 @@ const Navbar = () => {
                           >
                             Your Profile
                           </Link>
-                          <Link 
-                            to="/dashboard" 
-                            className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                            onClick={() => setUserMenuOpen(false)}
-                          >
-                            Athlete Dashboard
-                          </Link>
-                          {userData?.userType?.toLowerCase() === 'coach' && (
-                            <Link 
-                              to="/coach-dashboard" 
-                              className="block px-4 py-2 text-sm text-orange-600 hover:bg-gray-100"
-                              onClick={() => setUserMenuOpen(false)}
-                            >
-                              Coach Dashboard
-                            </Link>
-                          )}
-                          {userData?.userType?.toLowerCase() === 'nutritionist' && (
-                            <Link 
-                              to="/nutritionist-dashboard" 
-                              className="block px-4 py-2 text-sm text-green-600 hover:bg-gray-100"
-                              onClick={() => setUserMenuOpen(false)}
-                            >
-                              Nutritionist Dashboard
-                            </Link>
-                          )}
                           <button 
                             onClick={handleLogout} 
                             className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
@@ -711,41 +686,6 @@ const Navbar = () => {
                         Your Profile
                       </Link>
                       
-                      <Link 
-                        to="/dashboard" 
-                        className="bg-white/10 hover:bg-white/20 text-white py-2 px-4 rounded-lg transition-colors duration-200 flex items-center mb-2"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
-                        </svg>
-                        Athlete Dashboard
-                      </Link>
-                      
-                      {userData?.userType?.toLowerCase() === 'coach' && (
-                        <Link 
-                          to="/coach-dashboard" 
-                          className="bg-orange-500/80 hover:bg-orange-500 text-white py-2 px-4 rounded-lg transition-colors duration-200 flex items-center mb-2"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                          </svg>
-                          Coach Dashboard
-                        </Link>
-                      )}
-                      {userData?.userType?.toLowerCase() === 'nutritionist' && (
-                        <Link 
-                          to="/nutritionist-dashboard" 
-                          className="bg-green-500/80 hover:bg-green-500 text-white py-2 px-4 rounded-lg transition-colors duration-200 flex items-center mb-2"
-                          onClick={() => setIsMobileMenuOpen(false)}
-                        >
-                          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                          </svg>
-                          Nutritionist Dashboard
-                        </Link>
-                      )}
                       <button 
                         onClick={() => {
                           handleLogout();
