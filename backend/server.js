@@ -24,10 +24,24 @@ app.use(cors());
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Connect to MongoDB
-mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/fitness')
-  .then(() => console.log('MongoDB connected'))
-  .catch(err => console.error('MongoDB connection error:', err));
+// MongoDB Connection String - prioritize environment variable
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/fitness';
+
+// Connect to MongoDB with updated options (removed deprecated options)
+mongoose.connect(MONGODB_URI, {
+  serverSelectionTimeoutMS: 5000, // Timeout after 5s instead of 30s
+  autoIndex: true, // Build indexes
+  maxPoolSize: 10, // Maintain up to 10 socket connections
+  family: 4 // Use IPv4, skip trying IPv6
+})
+.then(() => {
+  console.log('MongoDB connected successfully');
+  console.log(`MongoDB connection string: ${MONGODB_URI.replace(/mongodb(\+srv)?:\/\/([^:]+):([^@]+)@/, 'mongodb$1://$2:****@')}`);
+})
+.catch(err => {
+  console.error('MongoDB connection error:', err);
+  console.error('Please check your MongoDB URI in environment variables');
+});
 
 // Routes
 app.use('/api/users', userRoutes);
@@ -44,7 +58,18 @@ app.get('/', (req, res) => {
 app.use(notFound);
 app.use(errorHandler);
 
-// Start server
-app.listen(PORT, () => {
+// Start server with error handling for port already in use
+const server = app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+}).on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    // Try with a different port if the default one is in use
+    const newPort = parseInt(PORT) + 1;
+    console.warn(`Port ${PORT} is already in use, trying with port ${newPort}`);
+    app.listen(newPort, () => {
+      console.log(`Server running on port ${newPort}`);
+    });
+  } else {
+    console.error('Server error:', err);
+  }
 }); 
