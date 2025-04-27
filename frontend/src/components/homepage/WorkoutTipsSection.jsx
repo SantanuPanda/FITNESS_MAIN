@@ -44,7 +44,7 @@ function WorkoutTipsSection() {
   const quotes = [
     {
       text: "The only bad workout is the one that didn't happen.",
-      author: "Unknown"
+      author: "Eldric Voss"
     },
     {
       text: "Your body can stand almost anything. It's your mind that you have to convince.",
