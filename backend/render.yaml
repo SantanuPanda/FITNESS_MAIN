@@ -7,6 +7,8 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
       - key: MONGODB_URI
         value: mongodb+srv://ADMIN:Dyi5HSNTHNdiV0QD@test.doecbiu.mongodb.net/fitness
       - key: JWT_SECRET

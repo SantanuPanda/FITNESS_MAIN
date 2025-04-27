@@ -29,6 +29,7 @@ Fill in the following details:
 
 Under the "Environment" tab, add the following variables:
 - `NODE_ENV`: production
+- `PORT`: 10000
 - `MONGODB_URI`: mongodb+srv://ADMIN:Dyi5HSNTHNdiV0QD@test.doecbiu.mongodb.net/fitness
 - `JWT_SECRET`: fitness_secret_key_123 (or use a more secure random string)
 
@@ -38,10 +39,22 @@ Click "Create Web Service" and wait for the deployment to complete.
 
 ## Troubleshooting
 
-If you encounter the "bash: line 1: n: command not found" error:
+### "n: command not found" error
+If you encounter this error:
 1. Ensure your package.json has the proper configuration (Node.js version, scripts)
 2. Use the default build command: `npm install`
 3. Ensure you have a build script in package.json: `"build": "echo 'Build completed'"`
+
+### Port configuration issues
+If you see "Detected service running on port 10000" but your backend isn't working:
+1. Make sure your server.js is listening on the correct port (PORT env variable or 10000)
+2. Verify your server is binding to all interfaces with `0.0.0.0` (not just localhost)
+3. Check the Render logs for any connection errors
+
+### CORS issues
+If your frontend can't connect to your backend:
+1. Make sure your backend has CORS configured correctly
+2. Add your frontend URL to the allowed origins if needed
 
 ## MongoDB Atlas Configuration
 
@@ -59,4 +72,11 @@ Once deployed, you can verify your API is working by accessing:
 https://your-app-name.onrender.com/
 ```
 
-You should see the message: "Fitness API is running..." 
+You should see the message: "Fitness API is running..."
+
+For more detailed status information, visit:
+```
+https://your-app-name.onrender.com/info
+```
+
+This will show the connection status to MongoDB, the current port, and other useful information. 
