@@ -14,9 +14,19 @@ const LoginComponent = ({ onToggleForm }) => {
   const [forgotPasswordEmail, setForgotPasswordEmail] = useState('');
   const [forgotPasswordMessage, setForgotPasswordMessage] = useState('');
   const [forgotPasswordError, setForgotPasswordError] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  
+  // States for the multi-step password reset process
+  const [resetStep, setResetStep] = useState(1); // 1: Email, 2: OTP, 3: New Password, 4: Success
+  const [resetOtp, setResetOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [tempToken, setTempToken] = useState('');
   
   const navigate = useNavigate();
-  const { login, forgotPassword } = useAuth();
+  const { login, forgotPassword, resetPassword, verifyOtp } = useAuth();
 
   // Animation variants
   const containerVariants = {
@@ -62,13 +72,13 @@ const LoginComponent = ({ onToggleForm }) => {
     
     setLoading(true);
     setError('');
-    setSuccess('Logging in...');
+    setSuccess('Signing in...');
     
     try {
       const result = await login(email, password);
       
       if (result.success) {
-        setSuccess('Login successful! Redirecting...');
+        setSuccess('Login successful! Redirecting to dashboard...');
         setTimeout(() => {
           navigate('/dashboard');
         }, 1000);
@@ -98,47 +108,14 @@ const LoginComponent = ({ onToggleForm }) => {
     setForgotPasswordMessage('Processing your request...');
     
     try {
+      // Call the backend API to send OTP
       const result = await forgotPassword(forgotPasswordEmail);
       
       if (result.success) {
-        // Create message with preview link if available
-        let message = result.message || 'Password reset instructions sent to your email';
-        
-        // If preview URL is available (for development), show it
-        if (result.previewUrl) {
-          message = `${message} You can view the email here: `;
-        }
-        
-        setForgotPasswordMessage(message);
-        
-        // If preview URL is available, render it as clickable link
-        if (result.previewUrl) {
-          // Wait for state to update before adding the link to prevent losing it
-          setTimeout(() => {
-            const linkContainer = document.getElementById('preview-link-container');
-            if (linkContainer) {
-              const link = document.createElement('a');
-              link.href = result.previewUrl;
-              link.target = '_blank';
-              link.rel = 'noopener noreferrer';
-              link.textContent = 'Open Email Preview';
-              link.className = 'text-purple-600 hover:text-purple-700 underline';
-              linkContainer.appendChild(link);
-            }
-          }, 100);
-        }
-        
-        // Clear form after 5 seconds and close modal only if no preview URL
-        // If preview URL is present, let user manually close to see the link
-        if (!result.previewUrl) {
-          setTimeout(() => {
-            setForgotPasswordEmail('');
-            setForgotPasswordMessage('');
-            setShowForgotPassword(false);
-          }, 5000);
-        }
+        setForgotPasswordMessage('A verification code has been sent to your email.');
+        setResetStep(2); // Move to OTP verification step
       } else {
-        setForgotPasswordError(result.error || 'Error processing your request');
+        setForgotPasswordError(result.error || 'Failed to send verification code. Please try again.');
         setForgotPasswordMessage('');
       }
     } catch (error) {
@@ -148,6 +125,93 @@ const LoginComponent = ({ onToggleForm }) => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleOtpVerification = async (e) => {
+    e.preventDefault();
+    
+    if (!resetOtp) {
+      setForgotPasswordError('Please enter the verification code');
+      return;
+    }
+    
+    setLoading(true);
+    setForgotPasswordError('');
+    
+    try {
+      // Verify OTP with backend
+      const result = await verifyOtp(forgotPasswordEmail, resetOtp, 'password-reset');
+      
+      if (result.success) {
+        setForgotPasswordMessage('Code verified successfully. Set your new password.');
+        setTempToken(result.tempToken);
+        setResetStep(3); // Move to new password step
+      } else {
+        setForgotPasswordError(result.error || 'Invalid verification code. Please try again.');
+      }
+    } catch (error) {
+      console.error('OTP verification error:', error);
+      setForgotPasswordError(error.message || 'Failed to verify code');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handlePasswordReset = async (e) => {
+    e.preventDefault();
+    
+    if (!newPassword) {
+      setForgotPasswordError('Please enter a new password');
+      return;
+    }
+    
+    if (newPassword.length < 6) {
+      setForgotPasswordError('Password must be at least 6 characters long');
+      return;
+    }
+    
+    if (newPassword !== confirmNewPassword) {
+      setForgotPasswordError('Passwords do not match');
+      return;
+    }
+    
+    setLoading(true);
+    setForgotPasswordError('');
+    
+    try {
+      // Call backend to reset password with temp token
+      const result = await resetPassword(forgotPasswordEmail, tempToken, newPassword);
+      
+      if (result.success) {
+        setForgotPasswordMessage('Your password has been reset successfully!');
+        setResetStep(4); // Move to success step
+        
+        // Auto close after 3 seconds on success
+        setTimeout(() => {
+          resetPasswordModal();
+        }, 3000);
+      } else {
+        setForgotPasswordError(result.error || 'Failed to reset password. Please try again.');
+      }
+    } catch (error) {
+      console.error('Password reset error:', error);
+      setForgotPasswordError(error.message || 'Failed to reset password. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPasswordModal = () => {
+    // Reset all password reset related states
+    setShowForgotPassword(false);
+    setForgotPasswordEmail('');
+    setForgotPasswordMessage('');
+    setForgotPasswordError('');
+    setResetStep(1);
+    setResetOtp('');
+    setNewPassword('');
+    setConfirmNewPassword('');
+    setTempToken('');
   };
 
   return (
@@ -290,13 +354,28 @@ const LoginComponent = ({ onToggleForm }) => {
               </svg>
             </div>
             <motion.input
-              type="password"
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              type={showPassword ? "text" : "password"}
+              className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               whileFocus={{ scale: 1.01, boxShadow: "0 4px 10px -3px rgba(0, 0, 0, 0.1)" }}
             />
+            <div 
+              className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </div>
           </motion.div>
           
           <motion.div 
@@ -316,9 +395,13 @@ const LoginComponent = ({ onToggleForm }) => {
               </label>
             </div>
             <div className="text-sm">
-              <Link to="/forgot-password" className="font-medium text-purple-600 hover:text-purple-500">
+              <button 
+                type="button"
+                onClick={() => setShowForgotPassword(true)}
+                className="font-medium text-purple-600 hover:text-purple-500 bg-transparent border-none cursor-pointer"
+              >
                 Forgot your password?
-              </Link>
+              </button>
             </div>
           </motion.div>
 
@@ -366,7 +449,7 @@ const LoginComponent = ({ onToggleForm }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setShowForgotPassword(false)}
+            onClick={() => resetPasswordModal()}
           >
             <motion.div
               className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full relative"
@@ -378,16 +461,24 @@ const LoginComponent = ({ onToggleForm }) => {
             >
               <button
                 className="absolute top-4 right-4 text-gray-500 hover:text-gray-700"
-                onClick={() => setShowForgotPassword(false)}
+                onClick={() => resetPasswordModal()}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
               
-              <h3 className="text-2xl font-bold text-purple-600 mb-6">Reset Your Password</h3>
+              <h3 className="text-2xl font-bold text-purple-600 mb-6">
+                {resetStep === 1 && "Reset Your Password"}
+                {resetStep === 2 && "Verify Your Email"}
+                {resetStep === 3 && "Create New Password"}
+                {resetStep === 4 && "Password Reset Complete"}
+              </h3>
+              
+              {resetStep === 1 && (
+                <>
               <p className="text-gray-600 mb-6">
-                Enter your email address and we'll send you instructions to reset your password.
+                    Enter your email address and we'll send you a verification code to reset your password.
               </p>
               
               <form onSubmit={handleForgotPassword}>
@@ -416,8 +507,171 @@ const LoginComponent = ({ onToggleForm }) => {
                 {forgotPasswordMessage && (
                   <div className="text-green-500 text-sm mb-4">
                     {forgotPasswordMessage}
-                    {/* Container for preview link */}
-                    <div id="preview-link-container" className="mt-2"></div>
+                      </div>
+                    )}
+                    
+                    <button
+                      type="submit"
+                      className={`w-full py-2.5 px-4 text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-all duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                      disabled={loading}
+                    >
+                      {loading ? 'Sending...' : 'Send Verification Code'}
+                    </button>
+                  </form>
+                </>
+              )}
+              
+              {resetStep === 2 && (
+                <>
+                  <p className="text-gray-600 mb-6">
+                    We've sent a verification code to <span className="font-medium">{forgotPasswordEmail}</span>. 
+                    Please enter the code below.
+                  </p>
+                  
+                  <form onSubmit={handleOtpVerification}>
+                    <div className="mb-4">
+                      <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
+                        Verification Code
+                      </label>
+                      <input
+                        type="text"
+                        id="otp"
+                        className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+                        placeholder="Enter 6-digit code"
+                        value={resetOtp}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Only allow digits and limit to 6 characters
+                          if (/^\d*$/.test(value) && value.length <= 6) {
+                            setResetOtp(value);
+                            setForgotPasswordError('');
+                          }
+                        }}
+                        maxLength={6}
+                      />
+                    </div>
+                    
+                    {/* Error message */}
+                    {forgotPasswordError && (
+                      <div className="text-red-500 text-sm mb-4">
+                        {forgotPasswordError}
+                      </div>
+                    )}
+                    
+                    {/* Success message */}
+                    {forgotPasswordMessage && (
+                      <div className="text-green-500 text-sm mb-4">
+                        {forgotPasswordMessage}
+                      </div>
+                    )}
+                    
+                    <div className="flex flex-col space-y-3">
+                      <button
+                        type="submit"
+                        className={`w-full py-2.5 px-4 text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-all duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+                        disabled={loading}
+                      >
+                        {loading ? 'Verifying...' : 'Verify Code'}
+                      </button>
+                      
+                      <button
+                        type="button"
+                        className="text-sm text-purple-600 hover:text-purple-700 bg-transparent border-none cursor-pointer"
+                        onClick={() => {
+                          setResetStep(1);
+                          setForgotPasswordMessage('');
+                          setForgotPasswordError('');
+                        }}
+                      >
+                        Change Email Address
+                      </button>
+                    </div>
+                  </form>
+                </>
+              )}
+              
+              {resetStep === 3 && (
+                <>
+                  <p className="text-gray-600 mb-6">
+                    Create a new password for your account. The password should be at least 6 characters long.
+                  </p>
+                  
+                  <form onSubmit={handlePasswordReset}>
+                    <div className="mb-4">
+                      <label htmlFor="new-password" className="block text-sm font-medium text-gray-700 mb-1">
+                        New Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showNewPassword ? "text" : "password"}
+                          id="new-password"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 pr-10"
+                          placeholder="Enter new password"
+                          value={newPassword}
+                          onChange={(e) => setNewPassword(e.target.value)}
+                        />
+                        <div 
+                          className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
+                          onClick={() => setShowNewPassword(!showNewPassword)}
+                        >
+                          {showNewPassword ? (
+                            <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="mb-4">
+                      <label htmlFor="confirm-password" className="block text-sm font-medium text-gray-700 mb-1">
+                        Confirm New Password
+                      </label>
+                      <div className="relative">
+                        <input
+                          type={showConfirmNewPassword ? "text" : "password"}
+                          id="confirm-password"
+                          className="w-full px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 pr-10"
+                          placeholder="Confirm new password"
+                          value={confirmNewPassword}
+                          onChange={(e) => setConfirmNewPassword(e.target.value)}
+                        />
+                        <div 
+                          className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
+                          onClick={() => setShowConfirmNewPassword(!showConfirmNewPassword)}
+                        >
+                          {showConfirmNewPassword ? (
+                            <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
+                          ) : (
+                            <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Password strength indicator could be added here */}
+                    
+                    {/* Error message */}
+                    {forgotPasswordError && (
+                      <div className="text-red-500 text-sm mb-4">
+                        {forgotPasswordError}
+                      </div>
+                    )}
+                    
+                    {/* Success message */}
+                    {forgotPasswordMessage && (
+                      <div className="text-green-500 text-sm mb-4">
+                        {forgotPasswordMessage}
                   </div>
                 )}
                 
@@ -426,9 +680,33 @@ const LoginComponent = ({ onToggleForm }) => {
                   className={`w-full py-2.5 px-4 text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-all duration-200 ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
                   disabled={loading}
                 >
-                  {loading ? 'Sending...' : 'Send Reset Instructions'}
+                      {loading ? 'Resetting Password...' : 'Reset Password'}
                 </button>
               </form>
+                </>
+              )}
+              
+              {resetStep === 4 && (
+                <div className="text-center">
+                  <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-green-100 mb-6">
+                    <svg className="h-10 w-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
+                    </svg>
+                  </div>
+                  
+                  <p className="text-gray-600 mb-6">
+                    Your password has been reset successfully! You can now log in with your new password.
+                  </p>
+                  
+                  <button
+                    type="button"
+                    className="w-full py-2.5 px-4 text-white bg-purple-600 hover:bg-purple-700 rounded-md transition-all duration-200"
+                    onClick={() => resetPasswordModal()}
+                  >
+                    Back to Login
+                  </button>
+                </div>
+              )}
             </motion.div>
           </motion.div>
         )}

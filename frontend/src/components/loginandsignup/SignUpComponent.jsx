@@ -20,14 +20,68 @@ const SignUpComponent = ({ onToggleForm }) => {
   const [resendDisabled, setResendDisabled] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [captchaVerified, setCaptchaVerified] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const recaptchaRef = useRef(null);
   const otpInputRef = useRef(null);
+  
+  // Password requirements states
+  const [passwordFocused, setPasswordFocused] = useState(false);
+  const [passwordRequirements, setPasswordRequirements] = useState({
+    length: false,
+    uppercase: false,
+    lowercase: false,
+    number: false,
+    special: false
+  });
   
   // Generated OTP for demo purposes (in production this would be server-side)
   const [generatedOtp, setGeneratedOtp] = useState('');
 
   const navigate = useNavigate();
   const { signup } = useAuth();
+
+  // Function to check password requirements
+  const checkPasswordRequirements = (password) => {
+    const requirements = {
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      lowercase: /[a-z]/.test(password),
+      number: /[0-9]/.test(password),
+      special: /[^A-Za-z0-9]/.test(password)
+    };
+    
+    setPasswordRequirements(requirements);
+    return requirements;
+  };
+
+  // Calculate password strength
+  const calculatePasswordStrength = () => {
+    if (password.length === 0) return 0;
+    
+    // Count how many requirements are met
+    const metCount = Object.values(passwordRequirements).filter(Boolean).length;
+    
+    // Calculate percentage (0 to 100)
+    return (metCount / 5) * 100;
+  };
+
+  // Get strength text and color
+  const getStrengthInfo = () => {
+    const strength = calculatePasswordStrength();
+    
+    if (strength === 0) return { text: 'Very Weak', color: 'bg-gray-200' };
+    if (strength <= 20) return { text: 'Very Weak', color: 'bg-red-500' };
+    if (strength <= 40) return { text: 'Weak', color: 'bg-orange-500' };
+    if (strength <= 60) return { text: 'Medium', color: 'bg-yellow-500' };
+    if (strength <= 80) return { text: 'Strong', color: 'bg-blue-500' };
+    return { text: 'Very Strong', color: 'bg-green-500' };
+  };
+
+  // Check password requirements whenever password changes
+  useEffect(() => {
+    checkPasswordRequirements(password);
+  }, [password]);
 
   // Timer for OTP resend
   useEffect(() => {
@@ -85,33 +139,46 @@ const SignUpComponent = ({ onToggleForm }) => {
   };
   
   // Send OTP to user's email
-  const sendOTP = () => {
+  const sendOTP = async () => {
     setLoading(true);
     setError('');
     setSuccess('');
     
-    // Simulate API call to send OTP
-    setTimeout(() => {
-      // For demo purposes, generate a random 6-digit OTP
-      const newOtp = Math.floor(100000 + Math.random() * 900000).toString();
-      console.log('Generated OTP:', newOtp); // For testing only
-      setGeneratedOtp(newOtp);
+    try {
+      // Call the backend API to send verification OTP
+      const response = await fetch(`${import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/auth` : 'http://localhost:5000/api/auth'}/send-verification-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email }),
+      });
       
-      setShowOtpVerification(true);
-      setSuccess('A verification code has been sent to your email');
+      const data = await response.json();
+      
+      if (response.ok) {
+        setShowOtpVerification(true);
+        setSuccess('A verification code has been sent to your email');
+        setResendDisabled(true);
+        setResendTimer(60); // 60 seconds cooldown before resend
+        
+        // Focus on OTP input field
+        setTimeout(() => {
+          otpInputRef.current?.focus();
+        }, 300);
+      } else {
+        setError(data.message || 'Failed to send verification code');
+      }
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      setError('Failed to send verification code. Please try again.');
+    } finally {
       setLoading(false);
-      setResendDisabled(true);
-      setResendTimer(60); // 60 seconds cooldown before resend
-      
-      // Focus on OTP input field
-      setTimeout(() => {
-        otpInputRef.current?.focus();
-      }, 300);
-    }, 1500);
+    }
   };
   
   // Handle OTP verification
-  const verifyOtp = () => {
+  const verifyOtp = async () => {
     if (!otp || otp.length !== 6) {
       setOtpError('Please enter a valid 6-digit code');
       return;
@@ -120,34 +187,53 @@ const SignUpComponent = ({ onToggleForm }) => {
     setLoading(true);
     setError('');
     
-    // Simulate OTP verification (in production, you'd verify against your backend)
-    setTimeout(() => {
-      // For testing, accept any 6-digit code for now
-      // In production, you'd compare against the actual sent OTP
-      if (process.env.NODE_ENV === 'development' || otp === generatedOtp) {
-        setSuccess('Email verified successfully! Your account has been created.');
-        setLoading(false);
+    try {
+      // Call the backend API to verify the OTP
+      const response = await fetch(`${import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/auth` : 'http://localhost:5000/api/auth'}/verify-otp`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          email, 
+          otp,
+          purpose: 'verification'
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (response.ok) {
+        setSuccess('Email verified successfully! Creating your account...');
         
-        // Here you would typically redirect the user or show a success screen
-        // For demo purpose, we'll just reset the form after 3 seconds
-        setTimeout(() => {
-          setShowOtpVerification(false);
-          setName('');
-          setEmail('');
-          setPassword('');
-          setUserType('');
-          setOtp('');
-          setSuccess('');
-          setCaptchaVerified(false);
-          if (recaptchaRef.current) {
-            recaptchaRef.current.reset();
+        // Now proceed with account creation
+        try {
+          const signupResult = await signup(email, password, {
+            name,
+            userType
+          });
+          
+          if (signupResult.success) {
+            setSuccess('Account created successfully! Redirecting to login...');
+            setTimeout(() => {
+              onToggleForm();
+            }, 2000);
+          } else {
+            setError(signupResult.error || 'Error creating account. Please try again.');
           }
-        }, 3000);
+        } catch (signupError) {
+          console.error('Signup error:', signupError);
+          setError(signupError.message || 'An unexpected error occurred');
+        }
       } else {
-        setError('Invalid verification code. Please try again.');
-        setLoading(false);
+        setError(data.message || 'Invalid verification code. Please try again.');
       }
-    }, 1500);
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setError('Failed to verify code. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
   
   // Handle resend OTP
@@ -191,8 +277,12 @@ const SignUpComponent = ({ onToggleForm }) => {
       return;
     }
     
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    // Check password requirements
+    const requirements = checkPasswordRequirements(password);
+    const allRequirementsMet = Object.values(requirements).every(req => req);
+    
+    if (!allRequirementsMet) {
+      setError('Password does not meet all requirements');
       return;
     }
     
@@ -396,14 +486,118 @@ const SignUpComponent = ({ onToggleForm }) => {
               </svg>
             </div>
             <motion.input
-              type="password"
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              type={showPassword ? "text" : "password"}
+              className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               placeholder="Password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              onFocus={() => setPasswordFocused(true)}
+              onBlur={() => setPasswordFocused(false)}
               whileFocus={{ scale: 1.01, boxShadow: "0 4px 10px -3px rgba(0, 0, 0, 0.1)" }}
             />
+            <div 
+              className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? (
+                <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </div>
           </motion.div>
+          
+          {/* Password requirements indicator */}
+          {(passwordFocused || password.length > 0) && (
+            <motion.div 
+              className="mb-4 p-3 bg-gray-50 border border-gray-200 rounded-md text-sm"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+            >
+              <p className="font-medium text-gray-700 mb-2">Password must contain:</p>
+              <ul className="space-y-1">
+                <li className={`flex items-center ${passwordRequirements.length ? 'text-green-600' : 'text-gray-600'}`}>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {passwordRequirements.length ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    )}
+                  </svg>
+                  At least 8 characters
+                </li>
+                <li className={`flex items-center ${passwordRequirements.uppercase ? 'text-green-600' : 'text-gray-600'}`}>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {passwordRequirements.uppercase ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    )}
+                  </svg>
+                  At least one uppercase letter (A-Z)
+                </li>
+                <li className={`flex items-center ${passwordRequirements.lowercase ? 'text-green-600' : 'text-gray-600'}`}>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {passwordRequirements.lowercase ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    )}
+                  </svg>
+                  At least one lowercase letter (a-z)
+                </li>
+                <li className={`flex items-center ${passwordRequirements.number ? 'text-green-600' : 'text-gray-600'}`}>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {passwordRequirements.number ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    )}
+                  </svg>
+                  At least one number (0-9)
+                </li>
+                <li className={`flex items-center ${passwordRequirements.special ? 'text-green-600' : 'text-gray-600'}`}>
+                  <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    {passwordRequirements.special ? (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                    ) : (
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                    )}
+                  </svg>
+                  At least one special character (!@#$%^&*, etc.)
+                </li>
+              </ul>
+              
+              {/* Password strength indicator */}
+              {password.length > 0 && (
+                <div className="mt-4">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-xs font-medium text-gray-700">Strength: </span>
+                    <span className={`text-xs font-medium ${
+                      calculatePasswordStrength() <= 40 ? 'text-red-700' : 
+                      calculatePasswordStrength() <= 60 ? 'text-yellow-700' : 
+                      calculatePasswordStrength() <= 80 ? 'text-blue-700' : 
+                      'text-green-700'
+                    }`}>
+                      {getStrengthInfo().text}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-1.5">
+                    <div 
+                      className={`${getStrengthInfo().color} h-1.5 rounded-full transition-all duration-300 ease-in-out`}
+                      style={{ width: `${calculatePasswordStrength()}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+            </motion.div>
+          )}
           
           <motion.div 
             className="relative"
@@ -417,13 +611,28 @@ const SignUpComponent = ({ onToggleForm }) => {
               </svg>
             </div>
             <motion.input
-              type="password"
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
+              type={showConfirmPassword ? "text" : "password"}
+              className="w-full pl-10 pr-12 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500"
               placeholder="Confirm Password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               whileFocus={{ scale: 1.01, boxShadow: "0 4px 10px -3px rgba(0, 0, 0, 0.1)" }}
             />
+            <div 
+              className="absolute inset-y-0 right-3 flex items-center cursor-pointer"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+            >
+              {showConfirmPassword ? (
+                <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                </svg>
+              ) : (
+                <svg className="w-5 h-5 text-gray-500 hover:text-gray-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                </svg>
+              )}
+            </div>
           </motion.div>
           
           {/* User Type Selection */}
