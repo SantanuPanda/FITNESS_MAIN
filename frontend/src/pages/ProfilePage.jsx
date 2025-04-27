@@ -23,10 +23,36 @@ const ProfilePage = () => {
   // State management
   const [userData, setUserData] = useState(() => {
     // Initialize with basic data from auth to show something immediately
+    let initialUserType = 'athlete';
+    
+    // Try to get the user type from localStorage if available
+    try {
+      if (currentUser) {
+        const userId = currentUser.uid || currentUser._id || currentUser.id;
+        
+        // First check user-specific storage format
+        const userSpecificData = JSON.parse(localStorage.getItem(`fitness_app_user_${userId}`) || 'null');
+        if (userSpecificData && userSpecificData.userType) {
+          initialUserType = userSpecificData.userType;
+        } else {
+          // Then check the global users data format
+          const usersData = JSON.parse(localStorage.getItem('fitness_app_users_data') || '{}');
+          if (usersData[userId] && usersData[userId].userType) {
+            initialUserType = usersData[userId].userType;
+          } else if (currentUser.userType) {
+            // Finally fall back to auth context
+            initialUserType = currentUser.userType;
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error getting initial user type:', error);
+    }
+    
     return currentUser ? {
       name: currentUser.displayName || '',
       email: currentUser.email || '',
-      userType: currentUser.userType || 'Athlete', // Default to Athlete instead of User
+      userType: initialUserType, // Use the determined user type
       joinedDate: 'Loading...',
       photoURL: currentUser.photoURL || '',
     } : {
@@ -94,6 +120,27 @@ const ProfilePage = () => {
         // If component is unmounted, don't update state
         if (!isMounted) return;
         
+        // Try to get the most accurate user type from multiple sources
+        let bestUserType = null;
+        try {
+          // Try to get user type from all available sources
+          const userId = currentUser.uid || currentUser._id || currentUser.id;
+          
+          // First check user-specific storage format
+          const userSpecificData = JSON.parse(localStorage.getItem(`fitness_app_user_${userId}`) || 'null');
+          if (userSpecificData && userSpecificData.userType) {
+            bestUserType = userSpecificData.userType;
+          } else {
+            // Then check the global users data format
+            const usersData = JSON.parse(localStorage.getItem('fitness_app_users_data') || '{}');
+            if (usersData[userId] && usersData[userId].userType) {
+              bestUserType = usersData[userId].userType;
+            }
+          }
+        } catch (error) {
+          console.error('Error getting best user type:', error);
+        }
+        
         if (userDataResult.success) {
           const data = userDataResult.data;
           
@@ -104,7 +151,7 @@ const ProfilePage = () => {
           setUserData(prevData => ({
             name: data.name || currentUser.displayName || prevData.name || '',
             email: currentUser.email || prevData.email || '',
-            userType: data.userType || prevData.userType || 'User',
+            userType: bestUserType || data.userType || currentUser.userType || prevData.userType || 'athlete',
             joinedDate: data.createdAt ? new Date(data.createdAt).toLocaleDateString() : prevData.joinedDate || 'N/A',
             photoURL: photoFromStorage || prevData.photoURL || '',
           }));
@@ -116,7 +163,7 @@ const ProfilePage = () => {
           const defaultUserData = {
             name: currentUser.displayName || '',
             email: currentUser.email || '',
-            userType: currentUser.userType || 'Athlete', // Default to Athlete instead of User
+            userType: bestUserType || currentUser.userType || 'athlete', // Use best user type if available
             joinedDate: 'New User',
             photoURL: currentUser.photoURL || '',
           };
@@ -312,10 +359,41 @@ const ProfilePage = () => {
   };
 
   const getUserTypeLabel = () => {
-    console.log("Getting user type label for:", userData.userType);
+    // Get userType from all possible sources for logging
+    const authUserType = currentUser?.userType;
+    const stateUserType = userData?.userType;
     
+    // Try to get user type directly from localStorage as the most reliable source
+    let storageUserType = null;
+    try {
+      // Try both storage formats
+      const usersData = JSON.parse(localStorage.getItem('fitness_app_users_data') || '{}');
+      const userId = currentUser?.uid || currentUser?._id || currentUser?.id;
+      
+      if (userId && usersData[userId]) {
+        storageUserType = usersData[userId].userType;
+      }
+      
+      // Also check user-specific storage
+      const userData = JSON.parse(localStorage.getItem(`fitness_app_user_${userId}`) || 'null');
+      if (userData && userData.userType) {
+        // This should be the most reliable source
+        storageUserType = userData.userType;
+      }
+    } catch (error) {
+      console.error('Error getting user type from storage:', error);
+    }
+    
+    console.log("User type sources:", { 
+      fromAuth: authUserType, 
+      fromState: stateUserType, 
+      fromStorage: storageUserType 
+    });
+    
+    // Prioritize storage value, then auth value, then state value
     // Handle case variations (Athlete, athlete, ATHLETE, etc.)
-    const userType = (userData.userType || 'athlete')?.toLowerCase()?.trim();
+    const userType = (storageUserType || authUserType || stateUserType || 'athlete')?.toLowerCase()?.trim();
+    console.log("Final user type used:", userType);
     
     switch (userType) {
       case 'athlete':
@@ -323,7 +401,10 @@ const ProfilePage = () => {
       case 'player':
       case 'sport':
         return (
-          <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+          <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-2 rounded-full border border-blue-200 flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
             Athlete
           </span>
         );
@@ -331,7 +412,10 @@ const ProfilePage = () => {
       case 'nutrition':
       case 'dietitian':
         return (
-          <span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded">
+          <span className="bg-green-100 text-green-800 text-sm font-semibold px-4 py-2 rounded-full border border-green-200 flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 15.75c-3.75-1.5-6-4.5-6-10.5M3 15.75c3.75-1.5 6-4.5 6-10.5M10.5 19.5c2.25 0 4.5-1.5 5.25-4.5M10.5 19.5c-2.25 0-4.5-1.5-5.25-4.5" />
+            </svg>
             Nutritionist
           </span>
         );
@@ -339,14 +423,20 @@ const ProfilePage = () => {
       case 'trainer':
       case 'instructor':
         return (
-          <span className="bg-orange-100 text-orange-800 text-xs font-medium px-2.5 py-0.5 rounded">
+          <span className="bg-orange-100 text-orange-800 text-sm font-semibold px-4 py-2 rounded-full border border-orange-200 flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z" />
+            </svg>
             Coach
           </span>
         );
       default:
         // If we couldn't determine the type, default to Athlete
         return (
-          <span className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded">
+          <span className="bg-blue-100 text-blue-800 text-sm font-semibold px-4 py-2 rounded-full border border-blue-200 flex items-center">
+            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
             Athlete
           </span>
         );
@@ -576,6 +666,63 @@ const ProfilePage = () => {
                   <div className="flex items-center">
                     {getUserTypeLabel()}
                     <span className="ml-2 text-gray-500 text-sm">(Selected during signup - not editable)</span>
+                  </div>
+                  
+                  <div className="mt-2 p-3 bg-gray-50 rounded-lg border border-gray-200">
+                    <div className="flex justify-between items-center">
+                      <p className="text-sm text-gray-600">
+                        Not seeing the correct account type? Try refreshing your login session.
+                      </p>
+                      <button 
+                        onClick={() => {
+                          // Force a refresh of the component
+                          setLoadingState('loading');
+                          
+                          // Attempt to refresh user data
+                          const fetchUserType = async () => {
+                            try {
+                              const userId = currentUser?.uid || currentUser?._id || currentUser?.id;
+                              if (!userId) return;
+                              
+                              // Try to get the most recent user type from storage
+                              const usersData = JSON.parse(localStorage.getItem('fitness_app_users_data') || '{}');
+                              const userSpecificData = JSON.parse(localStorage.getItem(`fitness_app_user_${userId}`) || 'null');
+                              
+                              let mostRecentUserType = null;
+                              
+                              // Check both storage locations
+                              if (userSpecificData && userSpecificData.userType) {
+                                mostRecentUserType = userSpecificData.userType;
+                              } else if (usersData[userId] && usersData[userId].userType) {
+                                mostRecentUserType = usersData[userId].userType;
+                              }
+                              
+                              if (mostRecentUserType) {
+                                // Update local state with the latest user type
+                                setUserData(prevData => ({
+                                  ...prevData,
+                                  userType: mostRecentUserType
+                                }));
+                                
+                                setSuccessMessage('Account type refreshed!');
+                                setTimeout(() => setSuccessMessage(''), 3000);
+                              }
+                            } catch (error) {
+                              console.error('Error refreshing user type:', error);
+                              setErrorMessage('Could not refresh account type. Please try logging out and back in.');
+                              setTimeout(() => setErrorMessage(''), 5000);
+                            } finally {
+                              setLoadingState('success');
+                            }
+                          };
+                          
+                          fetchUserType();
+                        }}
+                        className="text-sm px-3 py-1 bg-blue-500 hover:bg-blue-600 text-white rounded-md transition-colors"
+                      >
+                        Refresh Type
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
