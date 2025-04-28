@@ -868,11 +868,34 @@ function CoachDashboard() {
   const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('teams');
   const [loading, setLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
   const [teamStats, setTeamStats] = useState({
     teamPerformance: 0,
     trainingCompletion: 0,
     athleteProgress: 0
   });
+
+  // Close notifications when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      const notificationButton = document.getElementById('notification-button');
+      const notificationPanel = document.getElementById('notification-panel');
+      
+      if (showNotifications && 
+          notificationButton && 
+          notificationPanel && 
+          !notificationButton.contains(event.target) && 
+          !notificationPanel.contains(event.target)) {
+        setShowNotifications(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showNotifications]);
 
   // Define tabs with icons
   const tabs = [
@@ -983,19 +1006,55 @@ function CoachDashboard() {
       {/* Top Navigation Bar */}
       <div className="bg-white shadow-sm sticky top-0 z-30">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">
-          {/* Website Logo */}
-          <div className="flex items-center">
+          {/* Website Logo and Mobile Menu Button */}
+          <div className="flex items-center space-x-4">
+            {/* Mobile menu button */}
+            <button 
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              className="md:hidden text-gray-600 focus:outline-none"
+              aria-label="Toggle menu"
+            >
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={sidebarOpen ? "M6 18L18 6M6 6l12 12" : "M4 6h16M4 12h16M4 18h16"} />
+              </svg>
+            </button>
+            
+            {/* Logo */}
             <img src={logo} alt="logo" className="w-10 h-10" />
           </div>
           
           {/* User Profile and Actions */}
           <div className="flex items-center space-x-4">
-            <div className="hidden md:flex items-center">
-              <button className="flex items-center gap-2 text-gray-600 hover:text-blue-600 mr-4">
+            <div className="hidden md:flex items-center relative">
+              <button 
+                id="notification-button"
+                className="flex items-center gap-2 text-gray-600 hover:text-blue-600 mr-4"
+                onClick={() => setShowNotifications(!showNotifications)}
+                aria-label="Notifications"
+              >
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
                 </svg>
               </button>
+              
+              {/* Notifications Dropdown */}
+              {showNotifications && (
+                <div 
+                  id="notification-panel"
+                  className="absolute right-0 mt-2 w-72 bg-white rounded-lg shadow-lg py-2 top-full z-50 border border-gray-200"
+                >
+                  <div className="px-4 py-2 border-b border-gray-200">
+                    <h3 className="text-sm font-semibold text-gray-700">Notifications</h3>
+                  </div>
+                  <div className="px-4 py-6 text-center text-gray-500">
+                    <svg className="w-10 h-10 mx-auto text-gray-300 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path>
+                    </svg>
+                    <p className="text-sm">No notifications have arrived.</p>
+                  </div>
+                </div>
+              )}
+              
               <span className="text-sm text-gray-600 mr-2">Welcome back</span>
             </div>
             <div className="flex items-center gap-2 bg-gradient-to-r from-orange-50 to-red-50 py-1 px-3 rounded-full">

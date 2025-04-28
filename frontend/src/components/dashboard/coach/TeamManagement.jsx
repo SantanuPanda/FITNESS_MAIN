@@ -109,10 +109,10 @@ function TeamManagement() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h2 className="text-2xl font-bold text-gray-800">Manage Teams</h2>
         <button
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center w-full sm:w-auto justify-center"
           onClick={() => setShowAddModal(true)}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
@@ -122,8 +122,8 @@ function TeamManagement() {
         </button>
       </div>
 
-      {/* Teams List */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      {/* Teams List - Desktop view */}
+      <div className="bg-white rounded-lg shadow overflow-hidden hidden md:block">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -167,10 +167,54 @@ function TeamManagement() {
         </table>
       </div>
 
+      {/* Teams List - Mobile & Tablet view */}
+      <div className="bg-white rounded-lg shadow md:hidden">
+        {teams.length === 0 ? (
+          <div className="px-4 py-6 text-center text-sm text-gray-500">
+            No teams found. Create your first team to get started!
+          </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {teams.map((team) => (
+              <div key={team.id} className="p-4">
+                <div className="flex justify-between items-center mb-2">
+                  <h3 className="text-sm font-medium text-gray-900">{team.name}</h3>
+                  <div className="flex space-x-2">
+                    <button 
+                      className="text-blue-600 hover:text-blue-900 text-sm font-medium"
+                      onClick={() => handleViewTeam(team)}
+                    >
+                      View
+                    </button>
+                    <button 
+                      className="text-red-600 hover:text-red-900 text-sm font-medium"
+                      onClick={() => handleDeleteTeam(team.id)}
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="text-xs text-gray-500">
+                    <span className="font-medium">Sport:</span> {team.sport}
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    <span className="font-medium">Members:</span> {team.members}
+                  </div>
+                  <div className="text-xs text-gray-500 col-span-2">
+                    <span className="font-medium">Created:</span> {team.createdAt}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* Add Team Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-5 sm:p-8 max-w-md w-full">
             <h3 className="text-xl font-bold mb-4">Add New Team</h3>
             
             <div className="mb-4">
@@ -221,15 +265,15 @@ function TeamManagement() {
               />
             </div>
             
-            <div className="flex justify-end">
+            <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
               <button
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded mr-2"
+                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded order-2 sm:order-1 sm:mr-2"
                 onClick={() => setShowAddModal(false)}
               >
                 Cancel
               </button>
               <button
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded order-1 sm:order-2 mb-2 sm:mb-0"
                 onClick={handleAddTeam}
               >
                 Add Team
@@ -241,8 +285,8 @@ function TeamManagement() {
 
       {/* View Team Modal */}
       {showViewModal && selectedTeam && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-8 max-w-md w-full">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-5 sm:p-8 max-w-md w-full">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold">Team Details</h3>
               <button 
