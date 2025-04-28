@@ -804,22 +804,6 @@ const AthleteDashboard = () => {
           <div className="mb-6">
             {modalContent.content}
           </div>
-          <div className="flex justify-end gap-3">
-            <button
-              onClick={closeModal}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 hover:border-gray-400 transition-all"
-            >
-              Cancel
-            </button>
-            {modalContent.onConfirm && (
-              <button
-                onClick={modalContent.onConfirm}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-md hover:shadow-md hover:translate-y-[-1px] active:translate-y-0 transition-all"
-              >
-                Confirm
-              </button>
-            )}
-          </div>
         </div>
       </motion.div>
     </div>
