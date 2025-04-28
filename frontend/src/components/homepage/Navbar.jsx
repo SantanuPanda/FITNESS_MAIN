@@ -40,6 +40,7 @@ const ContactIcon = () => (
 // Custom NavLink component with enhanced animations and scroll behavior
 const NavLink = ({ to, sectionId, children, isScrolled, isActive, index, setActive }) => {
   const [isHovered, setIsHovered] = useState(false);
+  const navigate = useNavigate();
   
   const handleClick = (e) => {
     e.preventDefault();
@@ -82,8 +83,8 @@ const NavLink = ({ to, sectionId, children, isScrolled, isActive, index, setActi
         });
       }, 50);
     } else {
-      // Fallback to homepage with hash
-      window.location.href = `/#${sectionId}`;
+      // Navigate to the route and then scroll to section if needed
+      navigate(to);
     }
   };
   
@@ -96,8 +97,8 @@ const NavLink = ({ to, sectionId, children, isScrolled, isActive, index, setActi
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.05, duration: 0.3 }}
     >
-      <a
-        href={`#${sectionId}`}
+      <Link
+        to={to}
         onClick={handleClick}
         className={`nav-link nav-link-shimmer group relative px-3 py-2 text-sm font-medium tracking-wide uppercase transition-all duration-300 flex items-center ${
           isScrolled ? 'text-white hover:text-blue-200' : 'text-white/90 hover:text-white'
@@ -180,7 +181,7 @@ const NavLink = ({ to, sectionId, children, isScrolled, isActive, index, setActi
             />
           </>
         )}
-      </a>
+      </Link>
     </motion.div>
   );
 };
@@ -600,8 +601,8 @@ const Navbar = () => {
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.3, delay: 0.1 + index * 0.1 }}
                   >
-                    <a
-                      href={`#${item.sectionId}`}
+                    <Link
+                      to={item.path}
                       className={`flex items-center py-4 text-lg font-medium ${
                         activeSection === item.sectionId
                           ? 'text-white font-semibold'
@@ -609,29 +610,44 @@ const Navbar = () => {
                       }`}
                       aria-current={activeSection === item.sectionId ? 'page' : undefined}
                       onClick={(e) => {
-                        e.preventDefault();
-                        // Manually set active section when clicking mobile menu item
-                        setActiveSection(item.sectionId);
+                        // Close the mobile menu first
                         setIsMobileMenuOpen(false);
+                        
+                        // Set active section
+                        setActiveSection(item.sectionId);
                         
                         // Special handling for home section
                         if (item.sectionId === 'home') {
+                          e.preventDefault();
                           window.scrollTo({ top: 0, behavior: 'smooth' });
                           return;
                         }
                         
+                        // Check if the section exists on the current page
                         const section = document.getElementById(item.sectionId);
                         if (section) {
+                          e.preventDefault();
                           const navbar = document.querySelector('header');
                           const navbarHeight = navbar ? navbar.offsetHeight : 0;
-                          const elementPosition = section.getBoundingClientRect().top;
-                          const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
                           
-                          window.scrollTo({
-                            top: offsetPosition,
-                            behavior: 'smooth'
+                          // Use scrollIntoView for smooth scrolling
+                          section.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'start'
                           });
+                          
+                          // Apply offset for fixed header with a slight delay
+                          setTimeout(() => {
+                            const elementPosition = section.getBoundingClientRect().top;
+                            const offsetPosition = window.pageYOffset + elementPosition - navbarHeight;
+                            
+                            window.scrollTo({
+                              top: offsetPosition,
+                              behavior: 'smooth'
+                            });
+                          }, 50);
                         }
+                        // If section doesn't exist, the default Link behavior will navigate to the path
                       }}
                     >
                       <motion.span 
@@ -647,7 +663,7 @@ const Navbar = () => {
                       >
                         {item.name}
                       </motion.span>
-                    </a>
+                    </Link>
                     <div className="h-px bg-blue-200/20 mt-4"></div>
                   </motion.li>
                 ))}
