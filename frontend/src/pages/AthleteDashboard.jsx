@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import logo from '../assets/logo.png';
@@ -12,6 +12,51 @@ import RecoveryStatus from '../components/dashboard/athlete/RecoveryStatus';
 import GoalProgress from '../components/dashboard/athlete/GoalProgress';
 import WorkoutSuggestions from '../components/dashboard/athlete/WorkoutSuggestions';
 import WorkoutTimer from '../components/dashboard/athlete/WorkoutTimer';
+
+// Scroll helper component
+const ScrollIndicator = () => {
+  const [isVisible, setIsVisible] = useState(true);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  
+  useEffect(() => {
+    const handleScroll = () => {
+      const position = window.scrollY;
+      setScrollPosition(position);
+      
+      // Hide after scrolling down a bit
+      if (position > 50) {
+        setIsVisible(false);
+      } else {
+        setIsVisible(true);
+      }
+    };
+    
+    window.addEventListener('scroll', handleScroll);
+    
+    // Start visible
+    setIsVisible(true);
+    
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+  
+  if (!isVisible) return null;
+  
+  return (
+    <motion.div 
+      initial={{ opacity: 0, y: -10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white px-4 py-2 rounded-full shadow-lg z-50 flex items-center space-x-2 border border-indigo-400"
+    >
+      <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
+      </svg>
+      <span className="text-sm font-medium">Scroll down to see all content</span>
+    </motion.div>
+  );
+};
 
 const AthleteDashboard = () => {
   const { currentUser } = useAuth();
@@ -78,6 +123,7 @@ const AthleteDashboard = () => {
   ]);
   const [messageInput, setMessageInput] = useState('');
   const chatEndRef = useRef(null);
+  const [showScrollIndicator, setShowScrollIndicator] = useState(false);
 
   // Save dashboard data to localStorage whenever it changes
   useEffect(() => {
@@ -427,6 +473,7 @@ const AthleteDashboard = () => {
   // Close any modal
   const closeModal = () => {
     setShowModal(false);
+    setShowScrollIndicator(false);
   };
 
   // Handle adding a new goal
@@ -601,17 +648,29 @@ const AthleteDashboard = () => {
 
   // New Workout Form
   const renderWorkoutForm = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4">
+      {showScrollIndicator && <ScrollIndicator />}
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden"
+        className="bg-gradient-to-br from-indigo-50 via-white to-blue-50 rounded-xl shadow-xl w-full max-w-md overflow-hidden border border-blue-100"
+        onAnimationComplete={() => {
+          // Check if form is taller than viewport
+          const modalHeight = document.querySelector('.bg-gradient-to-br.rounded-xl')?.clientHeight || 0;
+          const viewportHeight = window.innerHeight;
+          if (modalHeight > viewportHeight - 50) {
+            setShowScrollIndicator(true);
+          }
+        }}
       >
-        <div className="p-6">
+        <div className="p-6" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"40\" viewBox=\"0 0 40 40\"%3E%3Cg fill=\"%236b7ed9\" fill-opacity=\"0.05\"%3E%3Cpath d=\"M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z\"%3E%3C/path%3E%3C/g%3E%3C/svg%3E')", backgroundBlendMode: "overlay"}}>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold">Add New Workout</h2>
+            <h2 className="text-xl font-semibold text-gray-800">Add New Workout</h2>
             <button 
-              onClick={() => setShowWorkoutForm(false)}
+              onClick={() => {
+                setShowWorkoutForm(false);
+                setShowScrollIndicator(false);
+              }}
               className="text-gray-400 hover:text-gray-600"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -620,7 +679,10 @@ const AthleteDashboard = () => {
             </button>
           </div>
           
-          <form onSubmit={handleAddWorkout}>
+          <form onSubmit={(e) => {
+            handleAddWorkout(e);
+            setShowScrollIndicator(false);
+          }}>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -631,7 +693,7 @@ const AthleteDashboard = () => {
                   name="name"
                   value={newWorkoutData.name}
                   onChange={handleWorkoutInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-blue-200"
                   required
                 />
               </div>
@@ -646,7 +708,7 @@ const AthleteDashboard = () => {
                   value={newWorkoutData.duration}
                   onChange={handleWorkoutInputChange}
                   placeholder="e.g. 45 min"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-blue-200"
                   required
                 />
               </div>
@@ -659,7 +721,7 @@ const AthleteDashboard = () => {
                   name="intensity"
                   value={newWorkoutData.intensity}
                   onChange={handleWorkoutInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-blue-200"
                 >
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
@@ -678,7 +740,7 @@ const AthleteDashboard = () => {
                   value={newWorkoutData.target}
                   onChange={handleWorkoutInputChange}
                   placeholder="e.g. Strength, Cardio, Flexibility"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-blue-200"
                 />
               </div>
               
@@ -690,7 +752,7 @@ const AthleteDashboard = () => {
                   name="notes"
                   value={newWorkoutData.notes}
                   onChange={handleWorkoutInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-blue-200"
                   rows="3"
                 />
               </div>
@@ -699,14 +761,17 @@ const AthleteDashboard = () => {
             <div className="mt-6 flex justify-end gap-3">
               <button
                 type="button"
-                onClick={() => setShowWorkoutForm(false)}
-                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+                onClick={() => {
+                  setShowWorkoutForm(false);
+                  setShowScrollIndicator(false);
+                }}
+                className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 hover:border-gray-400 transition-all"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-md hover:shadow-md hover:translate-y-[-1px] active:translate-y-0 transition-all"
               >
                 Save Workout
               </button>
@@ -719,28 +784,37 @@ const AthleteDashboard = () => {
   
   // Modal component
   const renderModal = () => (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-start justify-center z-50 p-4">
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center z-50 p-4">
+      {showScrollIndicator && <ScrollIndicator />}
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-xl shadow-lg w-full max-w-md overflow-hidden"
+        className="bg-gradient-to-br from-indigo-50 via-white to-blue-50 rounded-xl shadow-xl w-full max-w-md overflow-hidden border border-blue-100"
+        onAnimationComplete={() => {
+          // Check if modal is taller than viewport
+          const modalHeight = document.querySelector('.bg-gradient-to-br.rounded-xl')?.clientHeight || 0;
+          const viewportHeight = window.innerHeight;
+          if (modalHeight > viewportHeight - 50) {
+            setShowScrollIndicator(true);
+          }
+        }}
       >
-        <div className="p-6">
-          <h2 className="text-xl font-semibold mb-4">{modalContent.title}</h2>
+        <div className="p-6" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"40\" viewBox=\"0 0 40 40\"%3E%3Cg fill=\"%236b7ed9\" fill-opacity=\"0.05\"%3E%3Cpath d=\"M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z\"%3E%3C/path%3E%3C/g%3E%3C/svg%3E')", backgroundBlendMode: "overlay"}}>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">{modalContent.title}</h2>
           <div className="mb-6">
             {modalContent.content}
           </div>
           <div className="flex justify-end gap-3">
             <button
               onClick={closeModal}
-              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50"
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 hover:border-gray-400 transition-all"
             >
               Cancel
             </button>
             {modalContent.onConfirm && (
               <button
                 onClick={modalContent.onConfirm}
-                className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700"
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-md hover:shadow-md hover:translate-y-[-1px] active:translate-y-0 transition-all"
               >
                 Confirm
               </button>
