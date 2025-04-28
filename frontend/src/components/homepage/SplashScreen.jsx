@@ -146,10 +146,10 @@ const SplashScreen = ({ onComplete }) => {
   useEffect(() => {
     const progressInterval = setInterval(() => {
       setProgress(prev => {
-        const newProgress = prev + Math.random() * 5;
+        const newProgress = prev + Math.random() * 10;
         return newProgress >= 100 ? 100 : newProgress;
       });
-    }, 150);
+    }, 50);
     
     return () => clearInterval(progressInterval);
   }, []);
@@ -159,7 +159,7 @@ const SplashScreen = ({ onComplete }) => {
     if (progress === 100) {
       const timer = setTimeout(() => {
         onComplete && onComplete();
-      }, 500);
+      }, 200);
       
       return () => clearTimeout(timer);
     }
