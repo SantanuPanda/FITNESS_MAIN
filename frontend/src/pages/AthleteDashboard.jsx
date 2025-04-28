@@ -141,6 +141,11 @@ const AthleteDashboard = () => {
     //   return;
     // }
 
+    // Redirect from metrics tab (removed) to overview tab
+    if (activeTab === 'metrics') {
+      setActiveTab('overview');
+    }
+
     // For demo purposes, setting mock data if no data exists
     // In a real app, this would fetch from backend API
     if (!localStorage.getItem('dashboardData')) {
@@ -177,7 +182,7 @@ const AthleteDashboard = () => {
     setTimeout(() => {
       setLoading(false);
     }, 800);
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, activeTab]);
 
   // Handle input change for workout form
   const handleWorkoutInputChange = (e) => {
@@ -508,7 +513,6 @@ const AthleteDashboard = () => {
   const tabs = [
     { id: 'overview', label: 'Overview', icon: 'M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z' },
     { id: 'workouts', label: 'Workouts', icon: 'M9.17 17.17a4.002 4.002 0 015.66 0M9 12a1 1 0 110-2 1 1 0 010 2zm6 0a1 1 0 110-2 1 1 0 010 2z' },
-    { id: 'metrics', label: 'Metrics', icon: 'M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z' },
     { id: 'goals', label: 'Goals', icon: 'M13 10V3L4 14h7v7l9-11h-7z' },
     { id: 'bmi', label: 'BMI Calculator', icon: 'M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z' },
     { id: 'ai', label: 'AI Assistance', icon: 'M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z M9.75 15.75a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM14.25 15.75a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM8.25 9.75a1.5 1.5 0 100-3 1.5 1.5 0 000 3zM15.75 9.75a1.5 1.5 0 100-3 1.5 1.5 0 000 3z' }

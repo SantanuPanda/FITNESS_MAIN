@@ -979,7 +979,7 @@ function CoachDashboard() {
   }, [activeTab]); // Recalculate when tab changes, as data might have been updated
 
   return (
-    <div className="bg-gray-50 min-h-screen flex flex-col">
+    <div className="bg-gradient-to-br from-orange-50 to-red-50 min-h-screen flex flex-col">
       {/* Top Navigation Bar */}
       <div className="bg-white shadow-sm sticky top-0 z-30">
         <div className="container mx-auto px-4 py-3 flex justify-between items-center">

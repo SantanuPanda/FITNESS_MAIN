@@ -150,10 +150,10 @@ const WorkoutTracker = ({ workouts = [], showControls = false, onAddWorkout = nu
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
-          className="text-center py-10 bg-gray-50 rounded-xl border border-dashed border-gray-300"
+          className="text-center py-6 bg-gray-50 rounded-xl border border-dashed border-gray-300"
         >
           <svg
-            className="mx-auto h-16 w-16 text-gray-400"
+            className="mx-auto h-12 w-12 text-gray-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -166,13 +166,13 @@ const WorkoutTracker = ({ workouts = [], showControls = false, onAddWorkout = nu
               d="M13 10V3L4 14h7v7l9-11h-7z"
             />
           </svg>
-          <h3 className="mt-3 text-sm font-medium text-gray-900">No workouts recorded yet</h3>
+          <h3 className="mt-2 text-sm font-medium text-gray-900">No workouts recorded yet</h3>
           <p className="mt-1 text-sm text-gray-500 max-w-xs mx-auto">Track your fitness journey by logging your workouts here.</p>
           
           {showControls && (
             <button
               onClick={() => setIsFormVisible(true)}
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              className="mt-3 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
               <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
