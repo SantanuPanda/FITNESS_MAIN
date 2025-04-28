@@ -6,7 +6,6 @@ import logo from '../assets/logo.png';
 
 // Dashboard Components
 import WorkoutTracker from '../components/dashboard/athlete/WorkoutTracker';
-import PerformanceMetrics from '../components/dashboard/athlete/PerformanceMetrics';
 import ActivityLog from '../components/dashboard/athlete/ActivityLog';
 import RecoveryStatus from '../components/dashboard/athlete/RecoveryStatus';
 import GoalProgress from '../components/dashboard/athlete/GoalProgress';
@@ -48,9 +47,9 @@ const ScrollIndicator = () => {
       initial={{ opacity: 0, y: -10 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -10 }}
-      className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white px-4 py-2 rounded-full shadow-lg z-50 flex items-center space-x-2 border border-indigo-400"
+      className="fixed top-4 left-1/2 transform -translate-x-1/2 bg-gradient-to-r from-gray-900 to-emerald-800 text-white px-4 py-2 rounded-full shadow-lg z-50 flex items-center space-x-2 border border-emerald-500/30"
     >
-      <svg className="w-5 h-5 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+      <svg className="w-5 h-5 animate-bounce text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"></path>
       </svg>
       <span className="text-sm font-medium">Scroll down to see all content</span>
@@ -70,7 +69,6 @@ const AthleteDashboard = () => {
     const savedData = localStorage.getItem('dashboardData');
     return savedData ? JSON.parse(savedData) : {
     recentWorkouts: [],
-    performanceData: {},
     activityLog: [],
     recoveryStatus: {},
     goals: []
@@ -152,12 +150,6 @@ const AthleteDashboard = () => {
         { id: 2, name: 'Long-Distance Run', date: '2023-10-08', duration: '60 min', intensity: 'Medium' },
         { id: 3, name: 'HIIT Cardio', date: '2023-10-05', duration: '30 min', intensity: 'Very High' }
       ],
-      performanceData: {
-        strength: { current: 78, previous: 72, unit: 'kg', change: '+8%' },
-        endurance: { current: 42, previous: 38, unit: 'min', change: '+10%' },
-        speed: { current: 12.5, previous: 11.8, unit: 'km/h', change: '+6%' },
-        flexibility: { current: 65, previous: 60, unit: 'cm', change: '+8%' }
-      },
       activityLog: [
         { date: '2023-10-10', steps: 8500, calories: 2200, activeMinutes: 95 },
         { date: '2023-10-09', steps: 7200, calories: 2100, activeMinutes: 80 },
@@ -186,38 +178,6 @@ const AthleteDashboard = () => {
       setLoading(false);
     }, 800);
   }, [currentUser, navigate]);
-
-  // Function to ensure performance metrics data is initialized
-  const ensurePerformanceData = () => {
-    // Check if we have performance data
-    setDashboardData(prev => {
-      // If performanceData is empty or missing fields, initialize it
-      if (!prev.performanceData || Object.keys(prev.performanceData).length === 0) {
-        const initialPerformanceData = {
-          strength: { current: 60, previous: 55, unit: 'kg', change: '+9%' },
-          endurance: { current: 30, previous: 25, unit: 'min', change: '+20%' },
-          speed: { current: 10, previous: 9, unit: 'km/h', change: '+11%' },
-          flexibility: { current: 50, previous: 45, unit: 'cm', change: '+11%' }
-        };
-        
-        const updatedData = {
-          ...prev,
-          performanceData: initialPerformanceData
-        };
-        
-        // Update localStorage
-        localStorage.setItem('dashboardData', JSON.stringify(updatedData));
-        
-        return updatedData;
-      }
-      return prev;
-    });
-  };
-
-  // Call the function when the component mounts
-  useEffect(() => {
-    ensurePerformanceData();
-  }, []);
 
   // Handle input change for workout form
   const handleWorkoutInputChange = (e) => {
@@ -305,9 +265,6 @@ const AthleteDashboard = () => {
       setDashboardData(updatedData);
       localStorage.setItem('dashboardData', JSON.stringify(updatedData));
       
-      // Update performance metrics based on workout
-      updatePerformanceMetrics(completedWorkout);
-      
       // Update recovery metrics if this was a recovery session
       if (activeWorkout.focus === 'Recovery') {
         const recoveryBoost = Math.floor(Math.random() * 10) + 10; // Random boost between 10-20
@@ -354,84 +311,6 @@ const AthleteDashboard = () => {
       }
     });
     setShowModal(true);
-  };
-  
-  // Update performance metrics after workout completion
-  const updatePerformanceMetrics = (workout) => {
-    // Simple logic to update metrics based on workout
-    // In a real app, this would be more sophisticated
-    const getRandomIncrease = () => {
-      return (Math.random() * 5 + 1).toFixed(1);
-    };
-    
-    setDashboardData(prev => {
-      // Create metrics object if it doesn't exist or is empty
-      const metrics = prev.performanceData && Object.keys(prev.performanceData).length > 0 
-        ? {...prev.performanceData}
-        : {
-            strength: { current: 60, previous: 55, unit: 'kg', change: '+9%' },
-            endurance: { current: 30, previous: 25, unit: 'min', change: '+20%' },
-            speed: { current: 10, previous: 9, unit: 'km/h', change: '+11%' },
-            flexibility: { current: 50, previous: 45, unit: 'cm', change: '+11%' }
-          };
-      
-      // Ensure all required metrics exist
-      if (!metrics.strength) {
-        metrics.strength = { current: 60, previous: 55, unit: 'kg', change: '+9%' };
-      }
-      if (!metrics.endurance) {
-        metrics.endurance = { current: 30, previous: 25, unit: 'min', change: '+20%' };
-      }
-      if (!metrics.speed) {
-        metrics.speed = { current: 10, previous: 9, unit: 'km/h', change: '+11%' };
-      }
-      if (!metrics.flexibility) {
-        metrics.flexibility = { current: 50, previous: 45, unit: 'cm', change: '+11%' };
-      }
-      
-      // Update a metric based on workout focus
-      if (workout.target === 'Strength' || workout.intensity === 'High') {
-        const current = Number(metrics.strength.current) + Number(getRandomIncrease());
-        const change = ((current - metrics.strength.previous) / metrics.strength.previous * 100).toFixed(0);
-        metrics.strength = {
-          ...metrics.strength,
-          current,
-          change: `+${change}%`
-        };
-      }
-      
-      if (workout.target === 'Cardio' || workout.intensity === 'Medium') {
-        const current = Number(metrics.endurance.current) + Number(getRandomIncrease());
-        const change = ((current - metrics.endurance.previous) / metrics.endurance.previous * 100).toFixed(0);
-        metrics.endurance = {
-          ...metrics.endurance,
-          current,
-          change: `+${change}%`
-        };
-      }
-      
-      // Add updates for other metrics to ensure they all change over time
-      const speedCurrent = Number(metrics.speed.current) + Number((getRandomIncrease() * 0.3));
-      const speedChange = ((speedCurrent - metrics.speed.previous) / metrics.speed.previous * 100).toFixed(0);
-      metrics.speed = {
-        ...metrics.speed,
-        current: speedCurrent,
-        change: `+${speedChange}%`
-      };
-      
-      const flexibilityCurrent = Number(metrics.flexibility.current) + Number((getRandomIncrease() * 0.2));
-      const flexibilityChange = ((flexibilityCurrent - metrics.flexibility.previous) / metrics.flexibility.previous * 100).toFixed(0);
-      metrics.flexibility = {
-        ...metrics.flexibility,
-        current: flexibilityCurrent,
-        change: `+${flexibilityChange}%`
-      };
-      
-      return {
-        ...prev,
-        performanceData: metrics
-      };
-    });
   };
 
   // Calculate BMI 
@@ -653,7 +532,7 @@ const AthleteDashboard = () => {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-gradient-to-br from-indigo-50 via-white to-blue-50 rounded-xl shadow-xl w-full max-w-md overflow-hidden border border-blue-100"
+        className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-xl shadow-xl w-full max-w-md overflow-hidden border border-emerald-500/30"
         onAnimationComplete={() => {
           // Check if form is taller than viewport
           const modalHeight = document.querySelector('.bg-gradient-to-br.rounded-xl')?.clientHeight || 0;
@@ -663,15 +542,15 @@ const AthleteDashboard = () => {
           }
         }}
       >
-        <div className="p-6" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"40\" viewBox=\"0 0 40 40\"%3E%3Cg fill=\"%236b7ed9\" fill-opacity=\"0.05\"%3E%3Cpath d=\"M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z\"%3E%3C/path%3E%3C/g%3E%3C/svg%3E')", backgroundBlendMode: "overlay"}}>
+        <div className="p-6" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"30\" height=\"30\" viewBox=\"0 0 30 30\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M15 0C6.716 0 0 6.716 0 15c0 8.284 6.716 15 15 15 8.284 0 15-6.716 15-15 0-8.284-6.716-15-15-15zm0 2c7.18 0 13 5.82 13 13s-5.82 13-13 13S2 22.18 2 15 7.82 2 15 2z\" fill=\"%233f3f46\" opacity=\".2\"/%3E%3C/svg%3E')", backgroundBlendMode: "soft-light"}}>
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-800">Add New Workout</h2>
+            <h2 className="text-xl font-semibold text-white">Add New Workout</h2>
             <button 
               onClick={() => {
                 setShowWorkoutForm(false);
                 setShowScrollIndicator(false);
               }}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 hover:text-gray-200"
             >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
@@ -685,7 +564,7 @@ const AthleteDashboard = () => {
           }}>
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Workout Name
                 </label>
                 <input
@@ -693,13 +572,13 @@ const AthleteDashboard = () => {
                   name="name"
                   value={newWorkoutData.name}
                   onChange={handleWorkoutInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-blue-200"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all hover:border-emerald-400 text-white"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Duration (min)
                 </label>
                 <input
@@ -708,20 +587,20 @@ const AthleteDashboard = () => {
                   value={newWorkoutData.duration}
                   onChange={handleWorkoutInputChange}
                   placeholder="e.g. 45 min"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-blue-200"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all hover:border-emerald-400 text-white"
                   required
                 />
               </div>
               
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label className="block text-sm font-medium text-gray-300 mb-1">
                   Intensity
                 </label>
                 <select
                   name="intensity"
                   value={newWorkoutData.intensity}
                   onChange={handleWorkoutInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-blue-200"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-700 rounded-md focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all hover:border-emerald-400 text-white"
                 >
                   <option value="Low">Low</option>
                   <option value="Medium">Medium</option>
@@ -740,7 +619,7 @@ const AthleteDashboard = () => {
                   value={newWorkoutData.target}
                   onChange={handleWorkoutInputChange}
                   placeholder="e.g. Strength, Cardio, Flexibility"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-blue-200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all hover:border-indigo-200"
                 />
               </div>
               
@@ -752,7 +631,7 @@ const AthleteDashboard = () => {
                   name="notes"
                   value={newWorkoutData.notes}
                   onChange={handleWorkoutInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all hover:border-blue-200"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all hover:border-indigo-200"
                   rows="3"
                 />
               </div>
@@ -771,7 +650,7 @@ const AthleteDashboard = () => {
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-500 text-white rounded-md hover:shadow-md hover:translate-y-[-1px] active:translate-y-0 transition-all"
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500 text-white rounded-md hover:shadow-md hover:translate-y-[-1px] active:translate-y-0 transition-all"
               >
                 Save Workout
               </button>
@@ -789,7 +668,7 @@ const AthleteDashboard = () => {
       <motion.div
         initial={{ scale: 0.9, opacity: 0 }}
         animate={{ scale: 1, opacity: 1 }}
-        className="bg-gradient-to-br from-indigo-50 via-white to-blue-50 rounded-xl shadow-xl w-full max-w-md overflow-hidden border border-blue-100"
+        className="bg-gradient-to-br from-blue-50 via-white to-purple-50 rounded-xl shadow-xl w-full max-w-md overflow-hidden border border-blue-100/40"
         onAnimationComplete={() => {
           // Check if modal is taller than viewport
           const modalHeight = document.querySelector('.bg-gradient-to-br.rounded-xl')?.clientHeight || 0;
@@ -799,10 +678,26 @@ const AthleteDashboard = () => {
           }
         }}
       >
-        <div className="p-6" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg xmlns=\"http://www.w3.org/2000/svg\" width=\"40\" height=\"40\" viewBox=\"0 0 40 40\"%3E%3Cg fill=\"%236b7ed9\" fill-opacity=\"0.05\"%3E%3Cpath d=\"M0 38.59l2.83-2.83 1.41 1.41L1.41 40H0v-1.41zM0 1.4l2.83 2.83 1.41-1.41L1.41 0H0v1.41zM38.59 40l-2.83-2.83 1.41-1.41L40 38.59V40h-1.41zM40 1.41l-2.83 2.83-1.41-1.41L38.59 0H40v1.41zM20 18.6l2.83-2.83 1.41 1.41L21.41 20l2.83 2.83-1.41 1.41L20 21.41l-2.83 2.83-1.41-1.41L18.59 20l-2.83-2.83 1.41-1.41L20 18.59z\"%3E%3C/path%3E%3C/g%3E%3C/svg%3E')", backgroundBlendMode: "overlay"}}>
+        <div className="p-6" style={{backgroundImage: "url('data:image/svg+xml,%3Csvg width=\"30\" height=\"30\" viewBox=\"0 0 30 30\" xmlns=\"http://www.w3.org/2000/svg\"%3E%3Cpath d=\"M15 0C6.716 0 0 6.716 0 15c0 8.284 6.716 15 15 15 8.284 0 15-6.716 15-15 0-8.284-6.716-15-15-15zm0 2c7.18 0 13 5.82 13 13s-5.82 13-13 13S2 22.18 2 15 7.82 2 15 2z\" opacity=\".05\"/%3E%3C/svg%3E')", backgroundBlendMode: "soft-light"}}>
           <h2 className="text-xl font-semibold text-gray-800 mb-4">{modalContent.title}</h2>
           <div className="mb-6">
             {modalContent.content}
+          </div>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={closeModal}
+              className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 hover:border-gray-400 transition-all"
+            >
+              Cancel
+            </button>
+            {modalContent.onConfirm && (
+              <button
+                onClick={modalContent.onConfirm}
+                className="px-4 py-2 bg-gradient-to-r from-blue-600 via-indigo-500 to-purple-500 text-white rounded-md hover:shadow-md hover:translate-y-[-1px] active:translate-y-0 transition-all"
+              >
+                Confirm
+              </button>
+            )}
           </div>
         </div>
       </motion.div>
@@ -1246,29 +1141,6 @@ const AthleteDashboard = () => {
                         </svg>
                         Last updated: Today, {new Date().toLocaleTimeString()}
                       </div>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Performance Metrics - Interactive Card with Tabs */}
-                <div className="lg:col-span-3 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition-shadow duration-300">
-                  <div className="p-6">
-                    <PerformanceMetrics 
-                      metricsData={dashboardData.performanceData} 
-                      detailed={true}
-                      onStartWorkout={handleStartWorkout}
-                    />
-                    <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                      <button 
-                        onClick={() => setActiveTab('metrics')}
-                        className="text-sm text-blue-600 hover:text-blue-800 font-medium flex items-center"
-                      >
-                        <span>View Details</span>
-                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                      </button>
-                      <div className="text-xs text-gray-500">Last 7 days</div>
                     </div>
                   </div>
                 </div>
@@ -1994,115 +1866,7 @@ const AthleteDashboard = () => {
 
             {activeTab === 'metrics' && (
               <div>
-                <div className="bg-white rounded-xl shadow-sm p-6 mb-6 border border-gray-100">
-                  <div className="flex justify-between items-start mb-6">
-                    <h2 className="text-xl font-semibold">Performance Metrics</h2>
-                    <button
-                      onClick={() => {
-                        const initialPerformanceData = {
-                          strength: { current: 60, previous: 55, unit: 'kg', change: '+9%' },
-                          endurance: { current: 30, previous: 25, unit: 'min', change: '+20%' },
-                          speed: { current: 10, previous: 9, unit: 'km/h', change: '+11%' },
-                          flexibility: { current: 50, previous: 45, unit: 'cm', change: '+11%' }
-                        };
-                        
-                        setDashboardData(prev => {
-                          const updatedData = {
-                            ...prev,
-                            performanceData: initialPerformanceData
-                          };
-                          
-                          // Update localStorage
-                          localStorage.setItem('dashboardData', JSON.stringify(updatedData));
-                          
-                          return updatedData;
-                        });
-                        
-                        // Show success message
-                        setModalContent({
-                          title: 'Performance Data Reset',
-                          content: <p>Your performance metrics have been reset to default values.</p>,
-                          onConfirm: () => setShowModal(false)
-                        });
-                        setShowModal(true);
-                      }}
-                      className="px-3 py-1.5 text-sm text-gray-600 border border-gray-300 rounded-md hover:bg-gray-50"
-                    >
-                      Reset Metrics
-                    </button>
-                  </div>
-                  
-                  <PerformanceMetrics 
-                    metricsData={dashboardData.performanceData} 
-                    detailed={true}
-                    onStartWorkout={handleStartWorkout}
-                  />
-                  
-                  {/* Add custom performance data */}
-                  <div className="mt-8 pt-6 border-t border-gray-200">
-                    <h3 className="text-lg font-medium mb-4">Add Performance Measurement</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Metric Type
-                        </label>
-                        <select 
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                          defaultValue="strength"
-                        >
-                          <option value="strength">Strength</option>
-                          <option value="endurance">Endurance</option>
-                          <option value="speed">Speed</option>
-                          <option value="flexibility">Flexibility</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                          Value
-                        </label>
-                        <input 
-                          type="number" 
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                          placeholder="e.g. 80"
-                        />
-                      </div>
-                      <div className="flex items-end">
-                        <button 
-                          onClick={() => {
-                            // Simulate adding a performance record
-                            const newStrength = Math.floor(Math.random() * 10) + dashboardData.performanceData.strength.current;
-                            const change = ((newStrength - dashboardData.performanceData.strength.previous) / dashboardData.performanceData.strength.previous * 100).toFixed(0);
-                            
-                            setDashboardData(prev => ({
-                              ...prev,
-                              performanceData: {
-                                ...prev.performanceData,
-                                strength: {
-                                  previous: prev.performanceData.strength.current,
-                                  current: newStrength,
-                                  unit: 'kg',
-                                  change: `+${change}%`
-                                }
-                              }
-                            }));
-                            
-                            // Show success notification
-                            setModalContent({
-                              title: 'Success',
-                              content: <p>Your performance data has been updated!</p>,
-                              onConfirm: () => setShowModal(false)
-                            });
-                            setShowModal(true);
-                          }}
-                          className="w-full h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-md"
-                        >
-                          Record Measurement
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                
+                {/* Activity History Section - Keeping this */}
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-semibold">Activity History</h2>
@@ -2232,34 +1996,29 @@ const AthleteDashboard = () => {
                                 <div className="border border-gray-200 rounded-lg p-3 flex items-center hover:border-blue-300 cursor-pointer">
                                   <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mr-3">
                                     <svg className="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                                      <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+                                      <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
                                     </svg>
                                   </div>
                                   <span className="font-medium">Google Fit</span>
                                 </div>
                               </div>
+                              <p className="text-gray-500 text-sm mt-4">
+                                Connecting a device or app will automatically sync your activity data. This is a demo feature and doesn't actually connect to real services.
+                              </p>
                             </div>
                           ),
                           onConfirm: () => {
-                            setShowModal(false);
-                            // Show success message
-                            setTimeout(() => {
-                              setModalContent({
-                                title: 'Device Connected',
-                                content: <p>Your device has been connected successfully! Data will sync automatically.</p>,
-                                onConfirm: () => setShowModal(false)
-                              });
-                              setShowModal(true);
-                            }, 1000);
+                            setModalContent({
+                              title: 'Success',
+                              content: <p>Device connected successfully! Your data will now sync automatically.</p>,
+                              onConfirm: () => setShowModal(false)
+                            });
                           }
                         });
                         setShowModal(true);
                       }}
-                      className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center"
+                      className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
                     >
-                      <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-                      </svg>
                       Connect Device
                     </button>
                   </div>
