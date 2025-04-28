@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Navbar from '../components/homepage/Navbar';
 import Home from '../components/homepage/Home';
 import About from '../components/homepage/About';
@@ -12,6 +12,7 @@ import SplashScreen from '../components/homepage/SplashScreen';
 
 const Homepage = () => {
     const location = useLocation();
+    const mainRef = useRef(null);
     const [showSplash, setShowSplash] = useState(() => {
       // Check if we're navigating from another page that wants to skip splash
       // This handles navigation from profile and other internal pages
@@ -29,10 +30,29 @@ const Homepage = () => {
       }
     });
   
-    // Scroll to top when route changes
+    // Smooth scroll to top when route changes
     useEffect(() => {
-      window.scrollTo(0, 0);
+      window.scrollTo({ 
+        top: 0, 
+        behavior: 'smooth' 
+      });
     }, [location.pathname]);
+
+    // Smooth scroll to section when hash changes
+    useEffect(() => {
+      if (location.hash && !showSplash) {
+        const id = location.hash.substring(1);
+        const element = document.getElementById(id);
+        if (element) {
+          setTimeout(() => {
+            element.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }, 100);
+        }
+      }
+    }, [location.hash, showSplash]);
 
     const handleSplashComplete = () => {
       setShowSplash(false);
@@ -106,7 +126,7 @@ const Homepage = () => {
         ) : (
           <>
             <Navbar />
-            <main>
+            <main ref={mainRef}>
               {renderContent()}
             </main>
             <Footer />

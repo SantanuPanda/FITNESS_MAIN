@@ -49,7 +49,12 @@ const NavLink = ({ to, sectionId, children, isScrolled, isActive, index, setActi
     
     // Special handling for home section
     if (sectionId === 'home') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+      window.scrollTo({ 
+        top: 0, 
+        behavior: 'smooth',
+        // Add a longer duration for smoother scrolling
+        duration: 1000
+      });
       return;
     }
     
@@ -59,15 +64,23 @@ const NavLink = ({ to, sectionId, children, isScrolled, isActive, index, setActi
       const navbar = document.querySelector('header');
       const navbarHeight = navbar ? navbar.offsetHeight : 0;
       
-      // Calculate position and account for navbar height
-      const elementPosition = section.getBoundingClientRect().top;
-      const offsetPosition = elementPosition + window.pageYOffset - navbarHeight;
-      
-      // Smooth scroll to element
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: 'smooth'
+      // Use scrollIntoView for smoother animation
+      section.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+        inline: 'nearest'
       });
+      
+      // Apply offset for fixed header with a slight delay to ensure smooth animation
+      setTimeout(() => {
+        const elementPosition = section.getBoundingClientRect().top;
+        const offsetPosition = window.pageYOffset + elementPosition - navbarHeight - 10;
+        
+        window.scrollTo({
+          top: offsetPosition,
+          behavior: 'smooth'
+        });
+      }, 50);
     } else {
       // Fallback to homepage with hash
       window.location.href = `/#${sectionId}`;
@@ -208,22 +221,30 @@ const Navbar = () => {
   useEffect(() => {
     let lastScrollTime = 0;
     const throttleWait = 10; // 10ms throttle 
+    let scrollAnimationFrameId = null;
     
     const handleScroll = () => {
       const now = Date.now();
       if (now - lastScrollTime >= throttleWait) {
         lastScrollTime = now;
         
-        // Basic scroll detection
-        setIsScrolled(window.scrollY > 20);
+        // Use requestAnimationFrame for smoother UI updates
+        if (scrollAnimationFrameId) {
+          cancelAnimationFrame(scrollAnimationFrameId);
+        }
         
-        // Calculate scroll progress (0-100) for animation intensity
-        const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
-        const progress = Math.min(100, Math.max(0, (window.scrollY / scrollHeight) * 100));
-        setScrollProgress(progress);
-        
-        // Check which section is in view
-        checkActiveSection();
+        scrollAnimationFrameId = requestAnimationFrame(() => {
+          // Basic scroll detection
+          setIsScrolled(window.scrollY > 20);
+          
+          // Calculate scroll progress (0-100) for animation intensity
+          const scrollHeight = document.documentElement.scrollHeight - window.innerHeight;
+          const progress = Math.min(100, Math.max(0, (window.scrollY / scrollHeight) * 100));
+          setScrollProgress(progress);
+          
+          // Check which section is in view
+          checkActiveSection();
+        });
       }
     };
     

@@ -1,9 +1,65 @@
 import { motion } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Home = () => {
   const navigate = useNavigate();
+  const [isVisible, setIsVisible] = useState(false);
+  const homeRef = useRef(null);
+
+  // Animation to reveal elements on scroll
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            setIsVisible(true);
+            // Once visible, no need to observe anymore
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        // Element is considered visible when 10% of it is in viewport
+        threshold: 0.1,
+        rootMargin: '0px 0px -10% 0px'
+      }
+    );
+
+    if (homeRef.current) {
+      observer.observe(homeRef.current);
+    }
+
+    // Setup scroll reveal for all elements with scroll-reveal class
+    const scrollElements = document.querySelectorAll('.scroll-reveal');
+    const scrollObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+          } 
+        });
+      },
+      { 
+        threshold: 0.15,
+        rootMargin: '0px 0px -50px 0px'
+      }
+    );
+
+    scrollElements.forEach(el => {
+      scrollObserver.observe(el);
+    });
+
+    return () => {
+      if (homeRef.current) {
+        observer.unobserve(homeRef.current);
+      }
+      
+      scrollElements.forEach(el => {
+        scrollObserver.unobserve(el);
+      });
+    };
+  }, []);
 
   // Function to redirect to signup page
   const goToSignup = () => {
@@ -65,7 +121,7 @@ const Home = () => {
       ></motion.div>
       
       {/* Main content */}
-      <div className="container mx-auto px-6 pt-24 pb-12 relative z-20">
+      <div ref={homeRef} className="container mx-auto px-6 pt-24 pb-12 relative z-20">
         <motion.div 
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
