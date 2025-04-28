@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import logoImage from '../../assets/logo.png';
@@ -180,7 +180,7 @@ const SignUpComponent = ({ onToggleForm }) => {
   // Handle OTP verification
   const verifyOtp = async () => {
     if (!otp || otp.length !== 6) {
-      setOtpError('Please enter a valid 6-digit code');
+      setError('Please enter a valid 6-digit code');
       return;
     }
     
@@ -296,32 +296,14 @@ const SignUpComponent = ({ onToggleForm }) => {
       return;
     }
     
-    setLoading(true);
-    setError('');
-    setSuccess('Creating your account...');
-    
-    try {
-      const result = await signup(email, password, {
-        name,
-        userType
-      });
-      
-      if (result.success) {
-        setSuccess('Account created successfully! Redirecting to login...');
-        setTimeout(() => {
-          onToggleForm();
-        }, 2000);
-      } else {
-        setError(result.error || 'Error creating account. Please try again.');
-        setSuccess('');
-      }
-    } catch (error) {
-      console.error('Signup error:', error);
-      setError(error.message || 'An unexpected error occurred');
-      setSuccess('');
-    } finally {
-      setLoading(false);
+    // If OTP verification is already showing, verify the OTP
+    if (showOtpVerification) {
+      verifyOtp();
+      return;
     }
+    
+    // Otherwise, send OTP for verification
+    sendOTP();
   };
 
   return (
@@ -688,6 +670,71 @@ const SignUpComponent = ({ onToggleForm }) => {
             </div>
           </motion.div>
 
+          {/* OTP Verification Field (conditionally rendered) */}
+          {showOtpVerification && (
+            <motion.div 
+              className="mb-6 p-4 bg-blue-50 border border-blue-100 rounded-lg"
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              transition={{ duration: 0.3 }}
+            >
+              <div className="text-center mb-4">
+                <h3 className="text-md font-medium text-blue-800">Verify Your Email</h3>
+                <p className="text-sm text-blue-600 mt-1">
+                  Enter the 6-digit code sent to <span className="font-medium">{email}</span>
+                </p>
+              </div>
+              
+              <div className="mb-4">
+                <label htmlFor="otp" className="block text-sm font-medium text-gray-700 mb-1">
+                  Verification Code
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 4h3a3 3 0 006 0h3a2 2 0 012 2v9a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2zm2.5 7a1.5 1.5 0 100-3 1.5 1.5 0 000 3zm2.45 4a2.5 2.5 0 10-4.9 0h4.9zM12 9a1 1 0 100 2h3a1 1 0 100-2h-3zm-1 4a1 1 0 011-1h2a1 1 0 110 2h-2a1 1 0 01-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <input
+                    type="text"
+                    id="otp"
+                    ref={otpInputRef}
+                    className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-purple-500 text-center tracking-widest text-lg"
+                    placeholder="• • • • • •"
+                    maxLength={6}
+                    value={otp}
+                    onChange={handleOtpChange}
+                  />
+                </div>
+              </div>
+              
+              <div className="flex justify-between items-center text-sm">
+                <button
+                  type="button"
+                  className="text-blue-600 hover:text-blue-800 font-medium"
+                  onClick={() => {
+                    if (resendDisabled) return;
+                    setOtp('');
+                    sendOTP();
+                  }}
+                  disabled={resendDisabled}
+                >
+                  {resendDisabled 
+                    ? `Resend Code (${resendTimer}s)` 
+                    : 'Resend Code'}
+                </button>
+                
+                <button
+                  type="button" 
+                  className="bg-blue-600 text-white py-1 px-4 rounded hover:bg-blue-700 transition-colors"
+                  onClick={verifyOtp}
+                >
+                  Verify
+                </button>
+              </div>
+            </motion.div>
+          )}
+
           {/* Error message */}
           {error && (
             <motion.div 
@@ -720,7 +767,7 @@ const SignUpComponent = ({ onToggleForm }) => {
               boxShadow: "0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)"
             }}
             whileTap={{ scale: 0.98 }}
-            disabled={loading}
+            disabled={loading || showOtpVerification}
           >
             {loading ? (
               <div className="flex items-center justify-center">
@@ -728,9 +775,9 @@ const SignUpComponent = ({ onToggleForm }) => {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
-                Creating Account...
+                {showOtpVerification ? 'Verifying...' : 'Creating Account...'}
               </div>
-            ) : 'SIGN UP'}
+            ) : (showOtpVerification ? 'Enter Verification Code Above' : 'SIGN UP')}
           </motion.button>
         </motion.form>
       </motion.div>
