@@ -187,15 +187,8 @@ const FAQItem = ({ question, answer }) => {
 };
 
 const Pricing = () => {
-  const [showPopup, setShowPopup] = useState(false);
-  
   const handleGetStarted = () => {
-    setShowPopup(true);
-    
-    // Hide popup after 3 seconds
-    setTimeout(() => {
-      setShowPopup(false);
-    }, 3000);
+    alert("Coming soon! We're working on this feature. Please check back later!");
   };
 
   const plans = [
@@ -264,38 +257,6 @@ const Pricing = () => {
 
   return (
     <section id="pricing" className="py-24 bg-gradient-to-b from-gray-50 via-purple-50 to-violet-100 relative overflow-hidden">
-      {/* Global Popup Notification */}
-      {showPopup && (
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          exit={{ opacity: 0 }}
-          className="fixed inset-0 z-50 flex items-center justify-center"
-        >
-          <div className="absolute inset-0 bg-black/50" onClick={() => setShowPopup(false)}></div>
-          <motion.div 
-            initial={{ scale: 0.8, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            exit={{ scale: 0.8, opacity: 0 }}
-            className="bg-blue-500 text-white py-4 px-8 rounded-xl shadow-2xl relative z-10 max-w-md text-center"
-          >
-            <div className="flex items-center justify-center mb-2">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <h3 className="text-xl font-bold">Coming Soon</h3>
-            </div>
-            <p className="mb-4">We're working on this feature. Please check back later!</p>
-            <button 
-              onClick={() => setShowPopup(false)}
-              className="bg-white text-blue-500 px-4 py-2 rounded-lg font-medium hover:bg-blue-50 transition-colors"
-            >
-              Close
-            </button>
-          </motion.div>
-        </motion.div>
-      )}
-      
       {/* Background decoration */}
       <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
         <motion.div 
