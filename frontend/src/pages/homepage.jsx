@@ -1,5 +1,5 @@
 import { useLocation } from 'react-router-dom';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import Navbar from '../components/homepage/Navbar';
 import Home from '../components/homepage/Home';
 import About from '../components/homepage/About';
@@ -9,6 +9,31 @@ import Contact from '../components/homepage/Contact';
 import WorkoutTipsSection from '../components/homepage/WorkoutTipsSection';
 import Footer from '../components/homepage/Footer';
 import SplashScreen from '../components/homepage/SplashScreen';
+
+// Add smooth scrolling CSS
+const smoothScrollStyles = `
+  html {
+    scroll-behavior: smooth;
+    -webkit-overflow-scrolling: touch;
+  }
+  
+  body {
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+  
+  .section-glass-indigo,
+  .section-glass-purple,
+  .section-glass-blue,
+  .section-with-blobs {
+    will-change: transform;
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    perspective: 1000;
+  }
+`;
 
 const Homepage = () => {
     const location = useLocation();
@@ -30,6 +55,53 @@ const Homepage = () => {
       }
     });
   
+    // Add smooth scroll styles to document
+    useEffect(() => {
+      const style = document.createElement('style');
+      style.textContent = smoothScrollStyles;
+      document.head.appendChild(style);
+      return () => {
+        document.head.removeChild(style);
+      };
+    }, []);
+
+    // Optimized scroll handler with debounce
+    const handleScroll = useCallback(() => {
+      if (!mainRef.current) return;
+      
+      const sections = mainRef.current.querySelectorAll('section');
+      const scrollPosition = window.scrollY + window.innerHeight / 2;
+      
+      sections.forEach(section => {
+        const sectionTop = section.offsetTop;
+        const sectionHeight = section.offsetHeight;
+        
+        if (scrollPosition >= sectionTop && scrollPosition <= sectionTop + sectionHeight) {
+          section.style.transform = 'translateY(0)';
+          section.style.opacity = '1';
+        }
+      });
+    }, []);
+
+    // Add optimized scroll event listener
+    useEffect(() => {
+      let timeoutId;
+      const optimizedScroll = () => {
+        if (timeoutId) {
+          window.cancelAnimationFrame(timeoutId);
+        }
+        timeoutId = window.requestAnimationFrame(handleScroll);
+      };
+
+      window.addEventListener('scroll', optimizedScroll, { passive: true });
+      return () => {
+        window.removeEventListener('scroll', optimizedScroll);
+        if (timeoutId) {
+          window.cancelAnimationFrame(timeoutId);
+        }
+      };
+    }, [handleScroll]);
+
     // Smooth scroll to top when route changes
     useEffect(() => {
       window.scrollTo({ 
