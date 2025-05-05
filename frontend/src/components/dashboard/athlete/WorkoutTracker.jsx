@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 
-const WorkoutTracker = ({ workouts = [], showControls = false, onAddWorkout = null, onDeleteWorkout = null, handleFinishWorkout = null }) => {
+const WorkoutTracker = ({ workouts = [], showControls = false, onAddWorkout = null, onDeleteWorkout = null, handleStartWorkout = null }) => {
   const [localWorkouts, setLocalWorkouts] = useState(workouts);
   const [newWorkout, setNewWorkout] = useState({
     name: '',
@@ -10,6 +10,22 @@ const WorkoutTracker = ({ workouts = [], showControls = false, onAddWorkout = nu
     intensity: 'Medium'
   });
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [activeDropdown, setActiveDropdown] = useState(null);
+  const dropdownRef = useRef(null);
+
+  // Handle clicking outside to close the dropdown
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setActiveDropdown(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -42,10 +58,48 @@ const WorkoutTracker = ({ workouts = [], showControls = false, onAddWorkout = nu
       intensity: 'Medium'
     });
     
-    // Hide form after submitting
-    if (showControls) {
-      setIsFormVisible(false);
+    // Hide form
+    setIsFormVisible(false);
+  };
+
+  // Toggle dropdown menu
+  const toggleDropdown = (workoutId) => {
+    if (activeDropdown === workoutId) {
+      setActiveDropdown(null);
+    } else {
+      setActiveDropdown(workoutId);
     }
+  };
+
+  // Create a full workout object with necessary details for starting
+  const createWorkoutObject = (workout) => {
+    return {
+      id: workout.id,
+      name: workout.name,
+      duration: workout.duration,
+      level: workout.intensity === 'Low' ? 'Beginner' : 
+             workout.intensity === 'Medium' ? 'Intermediate' : 
+             workout.intensity === 'High' ? 'High' : 'Advanced',
+      focus: workout.target || 'General',
+      target: workout.target || 'General',
+      details: {
+        description: `${workout.name} - ${workout.duration} workout`,
+        exercises: [
+          { name: 'Exercise 1', duration: '5 min', completed: false },
+          { name: 'Exercise 2', duration: '5 min', completed: false },
+          { name: 'Exercise 3', duration: '5 min', completed: false }
+        ]
+      }
+    };
+  };
+
+  // Handle starting a workout
+  const handleStartWorkoutClick = (workout) => {
+    if (handleStartWorkout) {
+      const workoutWithDetails = createWorkoutObject(workout);
+      handleStartWorkout(workoutWithDetails);
+    }
+    setActiveDropdown(null);
   };
 
   const intensityColors = {
@@ -233,11 +287,51 @@ const WorkoutTracker = ({ workouts = [], showControls = false, onAddWorkout = nu
                         </svg>
                       </button>
                     )}
-                    <button className="ml-2 text-gray-400 hover:text-gray-600 transition-colors">
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
-                    </svg>
-                  </button>
+                    <div className="relative ml-2">
+                      <button 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleDropdown(workout.id);
+                        }}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 12h.01M12 12h.01M19 12h.01M6 12a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0zm7 0a1 1 0 11-2 0 1 1 0 012 0z" />
+                        </svg>
+                      </button>
+                      
+                      {activeDropdown === workout.id && (
+                        <div 
+                          ref={dropdownRef}
+                          className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg z-10 py-1 border border-gray-200"
+                        >
+                          {handleStartWorkout && (
+                            <button
+                              onClick={() => handleStartWorkoutClick(workout)}
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                            >
+                              <svg className="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                              </svg>
+                              Start Workout
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              // View workout details (placeholder for future functionality)
+                              toggleDropdown(workout.id);
+                            }}
+                            className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center"
+                          >
+                            <svg className="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                            </svg>
+                            View Details
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

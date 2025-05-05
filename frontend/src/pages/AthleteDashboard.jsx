@@ -11,6 +11,7 @@ import RecoveryStatus from '../components/dashboard/athlete/RecoveryStatus';
 import GoalProgress from '../components/dashboard/athlete/GoalProgress';
 import WorkoutSuggestions from '../components/dashboard/athlete/WorkoutSuggestions';
 import WorkoutTimer from '../components/dashboard/athlete/WorkoutTimer';
+import WorkoutExercises from '../components/dashboard/athlete/WorkoutExercises';
 
 // Scroll helper component
 const ScrollIndicator = () => {
@@ -92,6 +93,7 @@ const AthleteDashboard = () => {
     name: '',
     target: '',
     current: '',
+    category: 'strength',
     deadline: ''
   });
   
@@ -260,10 +262,24 @@ const AthleteDashboard = () => {
 
   // Handle starting a workout from suggestions
   const handleStartWorkout = (workout) => {
+    // Ensure duration is properly formatted for the timer
+    let formattedDuration = workout.duration;
+    if (workout.duration) {
+      // If duration doesn't contain "min" or "hr", add " min" suffix
+      if (!workout.duration.match(/min|hr|minute/i)) {
+        formattedDuration = `${workout.duration} min`;
+      }
+    }
+    
     setActiveWorkout({
       ...workout,
+      duration: formattedDuration, // Use formatted duration
       startTime: new Date().toISOString(),
-      isTimerActive: true
+      isTimerActive: true,
+      details: {
+        description: workout.description || '',
+        exercises: workout.details?.exercises || []
+      }
     });
     // Automatically switch to workouts tab to show active workout
     setActiveTab('workouts');
@@ -315,13 +331,7 @@ const AthleteDashboard = () => {
       // Switch to dashboard tab to show recent workouts in overview
       setActiveTab('dashboard');
       
-      // Show success message
-      setModalContent({
-        title: 'Workout Completed',
-        content: <p>Great job! You've completed your {activeWorkout.focus === 'Recovery' ? 'recovery session' : 'workout'}. It has been added to your Recent Workouts.</p>,
-        onConfirm: () => setShowModal(false)
-      });
-      setShowModal(true);
+      // Don't show success message, just complete the workout
     }
     
     setActiveWorkout(null);
@@ -340,6 +350,60 @@ const AthleteDashboard = () => {
     // Update state and localStorage
     setDashboardData(updatedData);
     localStorage.setItem('dashboardData', JSON.stringify(updatedData));
+  };
+
+  // Add exercise to active workout
+  const handleAddExercise = (exerciseName, exerciseDuration) => {
+    if (activeWorkout && exerciseName && exerciseDuration) {
+      const newExercise = {
+        name: exerciseName,
+        duration: exerciseDuration,
+        completed: false
+      };
+      
+      setActiveWorkout({
+        ...activeWorkout,
+        details: {
+          ...activeWorkout.details,
+          exercises: [...(activeWorkout.details?.exercises || []), newExercise]
+        }
+      });
+    }
+  };
+  
+  // Update existing exercise in active workout
+  const handleUpdateExercise = (index, exerciseName, exerciseDuration) => {
+    if (activeWorkout && activeWorkout.details?.exercises && index >= 0) {
+      const updatedExercises = [...activeWorkout.details.exercises];
+      updatedExercises[index] = {
+        ...updatedExercises[index],
+        name: exerciseName,
+        duration: exerciseDuration
+      };
+      
+      setActiveWorkout({
+        ...activeWorkout,
+        details: {
+          ...activeWorkout.details,
+          exercises: updatedExercises
+        }
+      });
+    }
+  };
+  
+  // Delete exercise from active workout
+  const handleDeleteExercise = (index) => {
+    if (activeWorkout && activeWorkout.details?.exercises && index >= 0) {
+      const updatedExercises = activeWorkout.details.exercises.filter((_, i) => i !== index);
+      
+      setActiveWorkout({
+        ...activeWorkout,
+        details: {
+          ...activeWorkout.details,
+          exercises: updatedExercises
+        }
+      });
+    }
   };
 
   // Calculate BMI 
@@ -370,6 +434,23 @@ const AthleteDashboard = () => {
       const bmiHistory = JSON.parse(localStorage.getItem('bmiHistory') || '[]');
       localStorage.setItem('bmiHistory', JSON.stringify([...bmiHistory, bmiEntry]));
     }
+  };
+
+  // Delete BMI history
+  const handleDeleteBmiHistory = () => {
+    // Clear the BMI history from localStorage
+    localStorage.removeItem('bmiHistory');
+    
+    // Show confirmation message
+    const toast = document.createElement('div');
+    toast.className = 'fixed bottom-4 right-4 bg-green-50 text-green-800 px-4 py-2 rounded-lg shadow-md text-sm border border-green-200';
+    toast.textContent = 'BMI history deleted';
+    document.body.appendChild(toast);
+    
+    // Remove notification after 2 seconds
+    setTimeout(() => {
+      toast.remove();
+    }, 2000);
   };
 
   // Handle BMI input changes
@@ -417,6 +498,7 @@ const AthleteDashboard = () => {
       name: '',
       target: '',
       current: '',
+      category: 'strength',
       deadline: ''
     });
     
@@ -1542,6 +1624,7 @@ This will help me create a personalized plan for you.`
                       <WorkoutTracker 
                         workouts={dashboardData.recentWorkouts} 
                         onDeleteWorkout={handleDeleteWorkout}
+                        handleStartWorkout={handleStartWorkout}
                       />
                       <div className="mt-4 pt-4 border-t border-gray-100">
                         <button 
@@ -1651,25 +1734,10 @@ This will help me create a personalized plan for you.`
                                     name="name"
                                     value={newGoalData.name}
                                     onChange={handleGoalInputChange}
-                                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-700"
+                                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
                                     required
                                   />
                                 </div>
-                                <div>
-                                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Target Date (optional)
-                                  </label>
-                                  <input
-                                    type="date"
-                                    name="deadline"
-                                    value={newGoalData.deadline}
-                                    onChange={handleGoalInputChange}
-                                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-700"
-                                  />
-                                </div>
-                              </div>
-                              
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Target Value
@@ -1680,10 +1748,13 @@ This will help me create a personalized plan for you.`
                                     value={newGoalData.target}
                                     onChange={handleGoalInputChange}
                                     placeholder="e.g. 100kg, 30min, 5 sessions"
-                                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-700"
+                                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
                                     required
                                   />
                                 </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                 <div>
                                   <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Current Value
@@ -1694,9 +1765,41 @@ This will help me create a personalized plan for you.`
                                     value={newGoalData.current}
                                     onChange={handleGoalInputChange}
                                     placeholder="e.g. 80kg, 35min, 3 sessions"
-                                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-amber-500 focus:border-transparent text-gray-700"
+                                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
                                     required
                                   />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Target Date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    name="deadline"
+                                    value={newGoalData.deadline}
+                                    onChange={handleGoalInputChange}
+                                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
+                                  />
+                                </div>
+                              </div>
+                              
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Category
+                                  </label>
+                                  <select
+                                    name="category"
+                                    value={newGoalData.category}
+                                    onChange={handleGoalInputChange}
+                                    className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
+                                    required
+                                  >
+                                    <option value="strength">Strength</option>
+                                    <option value="endurance">Endurance</option>
+                                    <option value="nutrition">Nutrition</option>
+                                    <option value="weight">Weight</option>
+                                  </select>
                                 </div>
                               </div>
                               
@@ -1840,45 +1943,49 @@ This will help me create a personalized plan for you.`
                               </p>
                             </div>
                             
-                            <div className="mt-3">
-                              <button 
-                                onClick={() => {
-                                  // Track BMI history
-                                  const bmiHistory = JSON.parse(localStorage.getItem('bmiHistory') || '[]');
-                                  setModalContent({
-                                    title: 'BMI History',
-                                    content: bmiHistory.length > 0 ? (
-                                      <div className="max-h-60 overflow-y-auto">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                          <thead className="bg-gray-50">
-                                            <tr>
-                                              <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Date</th>
-                                              <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">BMI</th>
-                                              <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Weight</th>
-                                            </tr>
-                                          </thead>
-                                          <tbody className="bg-white divide-y divide-gray-200">
-                                            {bmiHistory.map((entry, index) => (
-                                              <tr key={index}>
-                                                <td className="px-3 py-2 text-sm text-gray-800">{entry.date}</td>
-                                                <td className="px-3 py-2 text-sm text-right text-gray-800">{entry.bmi}</td>
-                                                <td className="px-3 py-2 text-sm text-right text-gray-800">{entry.weight} kg</td>
-                                              </tr>
-                                            ))}
-                                          </tbody>
-                                        </table>
-                                      </div>
-                                    ) : (
-                                      <p>No BMI history found. Calculate your BMI to start tracking.</p>
-                                    ),
-                                    onConfirm: () => setShowModal(false)
-                                  });
-                                  setShowModal(true);
-                                }}
-                                className="text-sm text-blue-600 hover:text-blue-800 font-medium"
-                              >
-                                View BMI History
-                              </button>
+                            <div className="mt-6">
+                              <div className="flex justify-between items-center mb-3">
+                                <h4 className="font-semibold text-gray-800">BMI History</h4>
+                                <button 
+                                  onClick={handleDeleteBmiHistory}
+                                  className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center"
+                                >
+                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                  </svg>
+                                  Delete History
+                                </button>
+                              </div>
+                              
+                              {(() => {
+                                const bmiHistory = JSON.parse(localStorage.getItem('bmiHistory') || '[]');
+                                return bmiHistory.length > 0 ? (
+                                  <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                      <thead className="bg-gray-50 sticky top-0">
+                                        <tr>
+                                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Date</th>
+                                          <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">BMI</th>
+                                          <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Weight</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="bg-white divide-y divide-gray-200">
+                                        {bmiHistory.map((entry, index) => (
+                                          <tr key={index}>
+                                            <td className="px-3 py-2 text-sm text-gray-800">{entry.date}</td>
+                                            <td className="px-3 py-2 text-sm text-right text-gray-800">{entry.bmi}</td>
+                                            <td className="px-3 py-2 text-sm text-right text-gray-800">{entry.weight} kg</td>
+                                          </tr>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-gray-500 text-center p-4 bg-gray-50 rounded-lg">
+                                    No BMI history found. Your history will appear here after calculating your BMI.
+                                  </div>
+                                );
+                              })()}
                             </div>
                           </motion.div>
                         )}
@@ -1924,22 +2031,8 @@ This will help me create a personalized plan for you.`
                             <div className="mt-4 md:mt-0 flex gap-2">
                               <button 
                                 onClick={() => {
-                                  setModalContent({
-                                    title: 'Pause Workout',
-                                    content: <p>Do you want to pause this workout? You can resume it later.</p>,
-                                    onConfirm: () => {
-                                      // In a real app, save workout state
-                                      setModalContent({
-                                        title: 'Workout Paused',
-                                        content: <p>Your workout has been paused. You can resume it later.</p>,
-                                        onConfirm: () => {
-                                          setActiveWorkout(null);
-                                          setShowModal(false);
-                                        }
-                                      });
-                                    }
-                                  });
-                                  setShowModal(true);
+                                  // Directly pause the workout without confirmation
+                                  setActiveWorkout(null);
                                 }}
                                 className="px-4 py-2 bg-gray-100 text-gray-800 rounded-md hover:bg-gray-200"
                               >
@@ -1964,12 +2057,120 @@ This will help me create a personalized plan for you.`
                         </div>
                         
                         <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 mb-6">
-                          <h3 className="font-medium text-blue-800 mb-2 flex items-center">
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            Workout Details
-                          </h3>
+                          <div className="flex justify-between items-center mb-2">
+                            <h3 className="font-medium text-blue-800 flex items-center">
+                              <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                              </svg>
+                              Workout Details
+                            </h3>
+                            <button
+                              onClick={() => {
+                                // Show modal to edit workout details
+                                setModalContent({
+                                  title: 'Edit Workout Details',
+                                  content: (
+                                    <div className="space-y-4">
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                          Workout Name
+                                        </label>
+                                        <input
+                                          type="text"
+                                          id="edit-workout-name"
+                                          defaultValue={activeWorkout.name}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                          Duration
+                                        </label>
+                                        <input
+                                          type="text"
+                                          id="edit-workout-duration"
+                                          defaultValue={activeWorkout.duration}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                          Difficulty Level
+                                        </label>
+                                        <select
+                                          id="edit-workout-level"
+                                          defaultValue={activeWorkout.level}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                        >
+                                          <option value="Beginner">Beginner</option>
+                                          <option value="Intermediate">Intermediate</option>
+                                          <option value="Advanced">Advanced</option>
+                                          <option value="High">High</option>
+                                        </select>
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                          Target/Focus
+                                        </label>
+                                        <input
+                                          type="text"
+                                          id="edit-workout-target"
+                                          defaultValue={activeWorkout.target || activeWorkout.focus || ''}
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                        />
+                                      </div>
+                                      <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                          Description
+                                        </label>
+                                        <textarea
+                                          id="edit-workout-description"
+                                          defaultValue={activeWorkout.details.description}
+                                          rows="3"
+                                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                        ></textarea>
+                                      </div>
+                                    </div>
+                                  ),
+                                  onConfirm: () => {
+                                    // Get values from inputs
+                                    const name = document.getElementById('edit-workout-name').value;
+                                    const duration = document.getElementById('edit-workout-duration').value;
+                                    const level = document.getElementById('edit-workout-level').value;
+                                    const target = document.getElementById('edit-workout-target').value;
+                                    const description = document.getElementById('edit-workout-description').value;
+                                    
+                                    // Format duration if needed
+                                    let formattedDuration = duration;
+                                    if (duration && !duration.match(/min|hr|minute/i)) {
+                                      formattedDuration = `${duration} min`;
+                                    }
+                                    
+                                    // Update workout details
+                                    setActiveWorkout({
+                                      ...activeWorkout,
+                                      name,
+                                      duration: formattedDuration,
+                                      level,
+                                      target,
+                                      focus: target, // Keep both in sync
+                                      details: {
+                                        ...activeWorkout.details,
+                                        description
+                                      }
+                                    });
+                                    
+                                    setShowModal(false);
+                                  }
+                                });
+                                setShowModal(true);
+                              }}
+                              className="px-3 py-1 bg-blue-100 text-blue-700 rounded-md text-xs font-medium hover:bg-blue-200 transition-colors"
+                            >
+                              Edit Details
+                            </button>
+                          </div>
+                          
                           <p className="text-sm text-blue-700 mb-3">
                             {activeWorkout.details.description}
                           </p>
@@ -1987,98 +2188,87 @@ This will help me create a personalized plan for you.`
                               <p className="font-semibold">{activeWorkout.target || activeWorkout.focus}</p>
                             </div>
                             <div className="bg-white p-3 rounded-lg shadow-sm">
-                              <span className="text-xs text-gray-500">Equipment</span>
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-500">Equipment</span>
+                                <button
+                                  onClick={() => {
+                                    // Show modal to edit equipment
+                                    setModalContent({
+                                      title: 'Edit Equipment',
+                                      content: (
+                                        <div className="space-y-4">
+                                          <p className="text-sm text-gray-600">
+                                            Enter equipment needed for this workout (comma-separated):
+                                          </p>
+                                          <textarea
+                                            id="edit-equipment"
+                                            defaultValue={activeWorkout.equipment || ''}
+                                            rows="3"
+                                            placeholder="e.g., Dumbbells, Resistance Bands, Yoga Mat"
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                          ></textarea>
+                                        </div>
+                                      ),
+                                      onConfirm: () => {
+                                        // Get equipment value
+                                        const equipment = document.getElementById('edit-equipment').value;
+                                        
+                                        // Update workout equipment
+                                        setActiveWorkout({
+                                          ...activeWorkout,
+                                          equipment
+                                        });
+                                        
+                                        setShowModal(false);
+                                      }
+                                    });
+                                    setShowModal(true);
+                                  }}
+                                  className="text-blue-600 hover:text-blue-800"
+                                >
+                                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                  </svg>
+                                </button>
+                              </div>
                               <p className="font-semibold">{activeWorkout.equipment || 'None'}</p>
                             </div>
                           </div>
                         </div>
                         
-                        {/* Workout exercises */}
-                        <div className="space-y-4">
-                          <h3 className="font-medium text-gray-800">Exercises</h3>
-                          
-                          {activeWorkout.details.exercises.map((exercise, index) => (
-                            <div key={index} className="border border-gray-100 rounded-lg p-4 hover:shadow-md transition-shadow">
-                              <div className="flex flex-col sm:flex-row sm:items-center justify-between">
-                                <div className="flex items-center">
-                                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold">
-                                    {index + 1}
-                                  </div>
-                                  <div className="ml-4">
-                                    <h4 className="font-medium">{exercise.name}</h4>
-                                    <p className="text-sm text-gray-500">{exercise.sets && exercise.reps 
-                                      ? `${exercise.sets} sets × ${exercise.reps} reps`
-                                      : exercise.duration}</p>
-                                  </div>
-                                </div>
-                                <div className="mt-3 sm:mt-0 flex gap-2">
-                                  <button 
-                                    onClick={() => {
-                                      // Mark as completed
-                                      const updatedExercises = [...activeWorkout.details.exercises];
-                                      updatedExercises[index] = { ...exercise, completed: !exercise.completed };
-                                      setActiveWorkout({
-                                        ...activeWorkout,
-                                        details: {
-                                          ...activeWorkout.details,
-                                          exercises: updatedExercises
-                                        }
-                                      });
-                                    }}
-                                    className={`px-3 py-1 rounded text-xs font-medium ${
-                                      exercise.completed 
-                                        ? 'bg-green-100 text-green-700 hover:bg-green-200' 
-                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                    }`}
-                                  >
-                                    {exercise.completed ? 'Completed' : 'Mark Complete'}
-                                  </button>
-                                </div>
-                              </div>
-                              {exercise.note && (
-                                <p className="mt-2 text-sm text-gray-600 pl-14">{exercise.note}</p>
-                              )}
-                            </div>
-                          ))}
-                        </div>
+                        <WorkoutExercises 
+                          activeWorkout={activeWorkout}
+                          setActiveWorkout={setActiveWorkout}
+                        />
                         
-                        <div className="mt-6 pt-4 border-t border-gray-100">
-                          <div className="flex justify-between items-center">
-                            <div className="text-sm text-gray-500">
-                              <span className="font-medium">Progress:</span> {
-                                activeWorkout.details.exercises.filter(e => e.completed).length
-                              } / {activeWorkout.details.exercises.length} exercises completed
-                            </div>
-                            <div className="w-32 h-2 bg-gray-200 rounded-full overflow-hidden">
-                              <div 
-                                className="h-full bg-blue-500 rounded-full" 
-                                style={{ 
-                                  width: `${(activeWorkout.details.exercises.filter(e => e.completed).length / 
-                                    activeWorkout.details.exercises.length) * 100}%` 
-                                }}
-                              ></div>
-                            </div>
-                          </div>
-                        </div>
                       </div>
                     </div>
                   ) : (
-                    <>
-                      <div className="md:col-span-2 bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                        <div className="flex justify-between items-center mb-6">
-                          <h2 className="text-xl font-semibold">Available Workout Plans</h2>
-                          <button 
-                            onClick={() => setShowInlineWorkoutForm(!showInlineWorkoutForm)}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-md shadow-sm transition-colors flex items-center"
-                          >
-                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={showInlineWorkoutForm ? "M6 18L18 6M6 6l12 12" : "M12 6v6m0 0v6m0-6h6m-6 0H6"}></path>
-                            </svg>
-                            {showInlineWorkoutForm ? 'Cancel' : 'New Workout'}
-                          </button>
+                    <div className="md:col-span-2 bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                      <div className="p-6">
+                        <div className="flex items-center justify-between mb-5">
+                          <div className="flex items-center">
+                            <div className="w-8 h-8 rounded-lg bg-blue-500 flex items-center justify-center text-white mr-3">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                              </svg>
+                            </div>
+                            <h2 className="text-lg font-semibold text-gray-800">Recent Workouts</h2>
+                          </div>
+                          <div className="flex space-x-2">
+                            <button 
+                              onClick={() => setShowInlineWorkoutForm(!showInlineWorkoutForm)}
+                              className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center"
+                            >
+                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d={showInlineWorkoutForm ? "M6 18L18 6M6 6l12 12" : "M12 6v6m0 0v6m0-6h6m-6 0H6"}></path>
+                              </svg>
+                              {showInlineWorkoutForm ? 'Cancel' : 'Add Workout'}
+                            </button>
+                          </div>
                         </div>
                         
-                        {/* Inline Workout Form in Workouts Tab */}
+                        {/* Inline Workout Form */}
                         <AnimatePresence>
                           {showInlineWorkoutForm && (
                             <motion.div
@@ -2185,488 +2375,25 @@ This will help me create a personalized plan for you.`
                           )}
                         </AnimatePresence>
                         
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          {/* First workout card */}
-                          <div 
-                            onClick={() => {
-                              // Create a sample workout structure to start
-                              const workout = {
-                                id: 'cardio-blast',
-                                name: 'Cardio Blast',
-                                duration: '30 min',
-                                level: 'High',
-                                focus: 'Cardio',
-                                target: 'Endurance',
-                                details: {
-                                  description: 'High intensity interval training to boost cardiovascular health and burn calories.',
-                                  exercises: [
-                                    { name: 'Jumping Jacks', duration: '1 min', completed: false },
-                                    { name: 'High Knees', duration: '1 min', completed: false },
-                                    { name: 'Burpees', duration: '30 sec', completed: false },
-                                    { name: 'Rest', duration: '30 sec', completed: false },
-                                    { name: 'Mountain Climbers', duration: '1 min', completed: false },
-                                    { name: 'Jumping Squats', duration: '1 min', completed: false },
-                                    { name: 'Rest', duration: '30 sec', completed: false },
-                                    { name: 'Plank Jacks', duration: '45 sec', completed: false },
-                                    { name: 'Rest', duration: '30 sec', completed: false },
-                                    { name: 'Sprint in Place', duration: '1 min', completed: false },
-                                    { name: 'Cool Down', duration: '2 min', completed: false }
-                                  ]
-                                }
-                              };
-                              handleStartWorkout(workout);
-                            }}
-                            className="border border-gray-100 rounded-lg p-4 hover:shadow-md transition-all hover:border-blue-200 cursor-pointer"
+                        <WorkoutTracker 
+                          workouts={dashboardData.recentWorkouts} 
+                          onDeleteWorkout={handleDeleteWorkout}
+                          handleStartWorkout={handleStartWorkout}
+                        />
+                        <div className="mt-4 pt-4 border-t border-gray-100">
+                          <button 
+                            onClick={() => setActiveTab('workouts')}
+                            className="text-blue-600 hover:text-blue-800 font-medium text-sm flex items-center group"
                           >
-                            <div className="flex justify-between">
-                              <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                  <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd"></path>
-                                </svg>
-                              </div>
-                              <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded-full">30 min</span>
-                            </div>
-                            <h3 className="font-medium mt-3">Cardio Blast</h3>
-                            <p className="text-sm text-gray-500 mt-1">High intensity interval training</p>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent parent onClick from firing
-                                const workout = {
-                                  id: 'cardio-blast',
-                                  name: 'Cardio Blast',
-                                  duration: '30 min',
-                                  level: 'High',
-                                  focus: 'Cardio',
-                                  target: 'Endurance',
-                                  details: {
-                                    description: 'High intensity interval training to boost cardiovascular health and burn calories.',
-                                    exercises: [
-                                      { name: 'Jumping Jacks', duration: '1 min', completed: false },
-                                      { name: 'High Knees', duration: '1 min', completed: false },
-                                      { name: 'Burpees', duration: '30 sec', completed: false },
-                                      { name: 'Rest', duration: '30 sec', completed: false },
-                                      { name: 'Mountain Climbers', duration: '1 min', completed: false },
-                                      { name: 'Jumping Squats', duration: '1 min', completed: false },
-                                      { name: 'Rest', duration: '30 sec', completed: false },
-                                      { name: 'Plank Jacks', duration: '45 sec', completed: false },
-                                      { name: 'Rest', duration: '30 sec', completed: false },
-                                      { name: 'Sprint in Place', duration: '1 min', completed: false },
-                                      { name: 'Cool Down', duration: '2 min', completed: false }
-                                    ]
-                                  }
-                                };
-                                handleStartWorkout(workout);
-                              }}
-                              className="mt-4 w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-sm font-medium"
-                            >
-                              Start Workout
-                            </button>
-                          </div>
-                          
-                          <div 
-                            onClick={() => {
-                              // Create a sample workout structure to start
-                              const workout = {
-                                id: 'upper-body',
-                                name: 'Upper Body Focus',
-                                duration: '45 min',
-                                level: 'Intermediate',
-                                focus: 'Strength',
-                                target: 'Upper Body',
-                                details: {
-                                  description: 'Build upper body strength and definition with this targeted workout routine.',
-                                  exercises: [
-                                    { name: 'Push-ups', sets: 3, reps: '10-12', completed: false, note: 'Keep core engaged' },
-                                    { name: 'Dumbbell Rows', sets: 3, reps: '12 each side', completed: false },
-                                    { name: 'Shoulder Press', sets: 3, reps: '10', completed: false },
-                                    { name: 'Bicep Curls', sets: 3, reps: '12', completed: false },
-                                    { name: 'Tricep Dips', sets: 3, reps: '12-15', completed: false },
-                                    { name: 'Chest Flies', sets: 3, reps: '12', completed: false },
-                                    { name: 'Plank', sets: 3, reps: '30 sec hold', completed: false }
-                                  ]
-                                }
-                              };
-                              handleStartWorkout(workout);
-                            }}
-                            className="border border-gray-100 rounded-lg p-4 hover:shadow-md transition-all hover:border-blue-200 cursor-pointer"
-                          >
-                            <div className="flex justify-between">
-                              <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                  <path fillRule="evenodd" d="M6 2a1 1 0 00-1 1v1H4a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2h-1V3a1 1 0 10-2 0v1H7V3a1 1 0 00-1-1zm0 5a1 1 0 000 2h8a1 1 0 100-2H6z" clipRule="evenodd"></path>
-                                </svg>
-                              </div>
-                              <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded-full">45 min</span>
-                            </div>
-                            <h3 className="font-medium mt-3">Upper Body Focus</h3>
-                            <p className="text-sm text-gray-500 mt-1">Strength and definition</p>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent parent onClick from firing
-                                const workout = {
-                                  id: 'upper-body',
-                                  name: 'Upper Body Focus',
-                                  duration: '45 min',
-                                  level: 'Intermediate',
-                                  focus: 'Strength',
-                                  target: 'Upper Body',
-                                  details: {
-                                    description: 'Build upper body strength and definition with this targeted workout routine.',
-                                    exercises: [
-                                      { name: 'Push-ups', sets: 3, reps: '10-12', completed: false, note: 'Keep core engaged' },
-                                      { name: 'Dumbbell Rows', sets: 3, reps: '12 each side', completed: false },
-                                      { name: 'Shoulder Press', sets: 3, reps: '10', completed: false },
-                                      { name: 'Bicep Curls', sets: 3, reps: '12', completed: false },
-                                      { name: 'Tricep Dips', sets: 3, reps: '12-15', completed: false },
-                                      { name: 'Chest Flies', sets: 3, reps: '12', completed: false },
-                                      { name: 'Plank', sets: 3, reps: '30 sec hold', completed: false }
-                                    ]
-                                  }
-                                };
-                                handleStartWorkout(workout);
-                              }}
-                              className="mt-4 w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-sm font-medium"
-                            >
-                              Start Workout
-                            </button>
-                          </div>
-                          
-                          <div 
-                            onClick={() => {
-                              // Create a sample workout structure to start
-                              const workout = {
-                                id: 'full-body',
-                                name: 'Full Body Workout',
-                                duration: '60 min',
-                                level: 'Advanced',
-                                focus: 'Strength',
-                                target: 'Full Body',
-                                details: {
-                                  description: 'Complete body conditioning with a mix of compound exercises for maximum efficiency.',
-                                  exercises: [
-                                    { name: 'Squats', sets: 4, reps: '12', completed: false },
-                                    { name: 'Deadlifts', sets: 4, reps: '10', completed: false, note: 'Focus on form' },
-                                    { name: 'Bench Press', sets: 4, reps: '10', completed: false },
-                                    { name: 'Pull-ups', sets: 3, reps: '8-10', completed: false },
-                                    { name: 'Lunges', sets: 3, reps: '12 each leg', completed: false },
-                                    { name: 'Plank', sets: 3, reps: '45 sec hold', completed: false },
-                                    { name: 'Russian Twists', sets: 3, reps: '20 total', completed: false },
-                                    { name: 'Burpees', sets: 3, reps: '12', completed: false }
-                                  ]
-                                }
-                              };
-                              handleStartWorkout(workout);
-                            }}
-                            className="border border-gray-100 rounded-lg p-4 hover:shadow-md transition-all hover:border-blue-200 cursor-pointer"
-                          >
-                            <div className="flex justify-between">
-                              <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center">
-                                <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                  <path fillRule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"></path>
-                                </svg>
-                              </div>
-                              <span className="text-xs font-medium px-2 py-1 bg-gray-100 rounded-full">60 min</span>
-                            </div>
-                            <h3 className="font-medium mt-3">Full Body Workout</h3>
-                            <p className="text-sm text-gray-500 mt-1">Complete body conditioning</p>
-                            <button 
-                              onClick={(e) => {
-                                e.stopPropagation(); // Prevent parent onClick from firing
-                                const workout = {
-                                  id: 'full-body',
-                                  name: 'Full Body Workout',
-                                  duration: '60 min',
-                                  level: 'Advanced',
-                                  focus: 'Strength',
-                                  target: 'Full Body',
-                                  details: {
-                                    description: 'Complete body conditioning with a mix of compound exercises for maximum efficiency.',
-                                    exercises: [
-                                      { name: 'Squats', sets: 4, reps: '12', completed: false },
-                                      { name: 'Deadlifts', sets: 4, reps: '10', completed: false, note: 'Focus on form' },
-                                      { name: 'Bench Press', sets: 4, reps: '10', completed: false },
-                                      { name: 'Pull-ups', sets: 3, reps: '8-10', completed: false },
-                                      { name: 'Lunges', sets: 3, reps: '12 each leg', completed: false },
-                                      { name: 'Plank', sets: 3, reps: '45 sec hold', completed: false },
-                                      { name: 'Russian Twists', sets: 3, reps: '20 total', completed: false },
-                                      { name: 'Burpees', sets: 3, reps: '12', completed: false }
-                                    ]
-                                  }
-                                };
-                                handleStartWorkout(workout);
-                              }}
-                              className="mt-4 w-full py-2 bg-gray-100 hover:bg-gray-200 text-gray-800 rounded text-sm font-medium"
-                            >
-                              Start Workout
-                            </button>
-                          </div>
-                        </div>
-                        
-                        <div className="mt-8">
-                          <h2 className="text-xl font-semibold mb-4">Recent Workouts</h2>
-                          <div className="overflow-hidden rounded-lg border border-gray-100">
-                            <table className="min-w-full divide-y divide-gray-200">
-                              <thead className="bg-gray-50">
-                                <tr>
-                                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Workout</th>
-                                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Duration</th>
-                                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Intensity</th>
-                                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                                </tr>
-                              </thead>
-                              <tbody className="bg-white divide-y divide-gray-200">
-                                {dashboardData.recentWorkouts.length > 0 ? (
-                                  dashboardData.recentWorkouts.map((workout, index) => (
-                                  <tr key={workout.id} className="hover:bg-gray-50">
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <div className="font-medium text-gray-900">{workout.name}</div>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{workout.date}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{workout.duration}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                      <span className={`text-xs px-2 py-1 rounded-full font-medium ${
-                                        workout.intensity === 'High' || workout.intensity === 'Very High'
-                                          ? 'bg-red-100 text-red-800'
-                                          : workout.intensity === 'Medium'
-                                          ? 'bg-yellow-100 text-yellow-800'
-                                          : 'bg-green-100 text-green-800'
-                                      }`}>
-                                        {workout.intensity}
-                                      </span>
-                                    </td>
-                                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm">
-                                        <button 
-                                          onClick={() => handleDeleteWorkout(workout.id)}
-                                          className="text-red-600 hover:text-red-900 mr-4"
-                                        >
-                                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                          </svg>
-                                        </button>
-                                        <button 
-                                          onClick={() => {
-                                            // View workout details
-                                            setModalContent({
-                                              title: `Workout: ${workout.name}`,
-                                              content: (
-                                                <div className="space-y-3">
-                                                  <div className="flex justify-between text-sm">
-                                                    <span className="text-gray-500">Date:</span>
-                                                    <span className="font-medium">{workout.date}</span>
-                                                  </div>
-                                                  <div className="flex justify-between text-sm">
-                                                    <span className="text-gray-500">Duration:</span>
-                                                    <span className="font-medium">{workout.duration}</span>
-                                                  </div>
-                                                  <div className="flex justify-between text-sm">
-                                                    <span className="text-gray-500">Intensity:</span>
-                                                    <span className="font-medium">{workout.intensity}</span>
-                                                  </div>
-                                                  {workout.target && (
-                                                    <div className="flex justify-between text-sm">
-                                                      <span className="text-gray-500">Target:</span>
-                                                      <span className="font-medium">{workout.target}</span>
-                                                    </div>
-                                                  )}
-                                                  {workout.notes && (
-                                                    <div className="pt-2 border-t border-gray-100">
-                                                      <h4 className="text-sm font-medium">Notes:</h4>
-                                                      <p className="text-sm text-gray-600 mt-1">{workout.notes}</p>
-                                                    </div>
-                                                  )}
-                                                </div>
-                                              ),
-                                              onConfirm: () => setShowModal(false)
-                                            });
-                                            setShowModal(true);
-                                          }}
-                                          className="text-blue-600 hover:text-blue-900"
-                                        >
-                                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                                          </svg>
-                                        </button>
-                                      </td>
-                                  </tr>
-                                  ))
-                                ) : (
-                                  <tr>
-                                    <td colSpan="5" className="px-6 py-4 text-center text-sm text-gray-500">
-                                      No workouts recorded yet. Start a workout or add one manually!
-                                    </td>
-                                  </tr>
-                                )}
-                              </tbody>
-                            </table>
-                          </div>
+                            View All Workouts
+                            <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path>
+                            </svg>
+                          </button>
                         </div>
                       </div>
-                    </>
+                    </div>
                   )}
-                </div>
-              )}
-
-              {activeTab === 'metrics' && (
-                <div>
-                  {/* Activity History Section - Keeping this */}
-                  <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-                    <div className="flex justify-between items-center mb-6">
-                      <h2 className="text-xl font-semibold">Activity History</h2>
-                      <button 
-                        onClick={() => {
-                          // Show activity log form
-                          setModalContent({
-                            title: 'Add Activity',
-                            content: (
-                              <div className="space-y-4 py-2">
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                      Date
-                                    </label>
-                                    <input 
-                                      type="date" 
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                                      defaultValue={new Date().toISOString().split('T')[0]}
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                      Steps
-                                    </label>
-                                    <input 
-                                      type="number" 
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                                      placeholder="e.g. 8500"
-                                    />
-                                  </div>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                      Calories
-                                    </label>
-                                    <input 
-                                      type="number" 
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                                      placeholder="e.g. 2200"
-                                    />
-                                  </div>
-                                  <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                                      Active Minutes
-                                    </label>
-                                    <input 
-                                      type="number" 
-                                      className="w-full px-3 py-2 border border-gray-300 rounded-md"
-                                      placeholder="e.g. 95"
-                                    />
-                                  </div>
-                                </div>
-                              </div>
-                            ),
-                            onConfirm: () => {
-                              // Add new activity
-                              const newActivity = {
-                                date: new Date().toISOString().split('T')[0],
-                                steps: Math.floor(Math.random() * 3000) + 7000,
-                                calories: Math.floor(Math.random() * 500) + 1800,
-                                activeMinutes: Math.floor(Math.random() * 50) + 60
-                              };
-                              
-                              handleUpdateActivityLog(newActivity);
-                              setShowModal(false);
-                            }
-                          });
-                          setShowModal(true);
-                        }}
-                        className="px-3 py-1.5 bg-blue-600 text-white rounded-md text-sm font-medium"
-                      >
-                        <div className="flex items-center">
-                          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                          </svg>
-                          Add Activity
-                        </div>
-                      </button>
-                    </div>
-                    <ActivityLog 
-                      activityData={dashboardData.activityLog} 
-                      detailed={true}
-                      onUpdateLog={handleUpdateActivityLog}
-                      onDeleteActivity={handleDeleteActivity}
-                    />
-                    
-                    <div className="mt-4 pt-4 border-t border-gray-100 flex justify-between items-center">
-                      <div className="text-sm text-gray-500">
-                        Data can be imported from fitness devices and apps
-                      </div>
-                      <button 
-                        onClick={() => {
-                          setModalContent({
-                            title: 'Connect Device',
-                            content: (
-                              <div className="space-y-4 py-2">
-                                <p className="text-gray-600 text-sm mb-4">
-                                  Select a device or app to sync your activity data:
-                                </p>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div className="border border-gray-200 rounded-lg p-3 flex items-center hover:border-blue-300 cursor-pointer">
-                                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mr-3">
-                                      <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-                                      </svg>
-                                    </div>
-                                    <span className="font-medium">Fitbit</span>
-                                  </div>
-                                  <div className="border border-gray-200 rounded-lg p-3 flex items-center hover:border-blue-300 cursor-pointer">
-                                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center mr-3">
-                                      <svg className="w-6 h-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd"></path>
-                                      </svg>
-                                    </div>
-                                    <span className="font-medium">Apple Health</span>
-                                  </div>
-                                  <div className="border border-gray-200 rounded-lg p-3 flex items-center hover:border-blue-300 cursor-pointer">
-                                    <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center mr-3">
-                                      <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                      </svg>
-                                    </div>
-                                    <span className="font-medium">Garmin</span>
-                                  </div>
-                                  <div className="border border-gray-200 rounded-lg p-3 flex items-center hover:border-blue-300 cursor-pointer">
-                                    <div className="w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center mr-3">
-                                      <svg className="w-6 h-6 text-purple-600" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                                      </svg>
-                                    </div>
-                                    <span className="font-medium">Google Fit</span>
-                                  </div>
-                                </div>
-                                <p className="text-gray-500 text-sm mt-4">
-                                  Connecting a device or app will automatically sync your activity data. This is a demo feature and doesn't actually connect to real services.
-                                </p>
-                              </div>
-                            ),
-                            onConfirm: () => {
-                              setModalContent({
-                                title: 'Success',
-                                content: <p>Device connected successfully! Your data will now sync automatically.</p>,
-                                onConfirm: () => setShowModal(false)
-                              });
-                            }
-                          });
-                          setShowModal(true);
-                        }}
-                        className="px-3 py-1.5 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
-                      >
-                        Connect Device
-                      </button>
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -2716,7 +2443,38 @@ This will help me create a personalized plan for you.`
                               </div>
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Target Date (optional)
+                                  Target Value
+                                </label>
+                                <input
+                                  type="text"
+                                  name="target"
+                                  value={newGoalData.target}
+                                  onChange={handleGoalInputChange}
+                                  placeholder="e.g. 100kg, 30min, 5 sessions"
+                                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
+                                  required
+                                />
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Current Value
+                                </label>
+                                <input
+                                  type="text"
+                                  name="current"
+                                  value={newGoalData.current}
+                                  onChange={handleGoalInputChange}
+                                  placeholder="e.g. 80kg, 35min, 3 sessions"
+                                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
+                                  required
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Target Date
                                 </label>
                                 <input
                                   type="date"
@@ -2731,31 +2489,20 @@ This will help me create a personalized plan for you.`
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                               <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Target Value
+                                  Category
                                 </label>
-                                <input
-                                  type="text"
-                                  name="target"
-                                  value={newGoalData.target}
+                                <select
+                                  name="category"
+                                  value={newGoalData.category}
                                   onChange={handleGoalInputChange}
-                                  placeholder="e.g. 100kg, 30min, 5 sessions"
                                   className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
                                   required
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">
-                                  Current Value
-                                </label>
-                                <input
-                                  type="text"
-                                  name="current"
-                                  value={newGoalData.current}
-                                  onChange={handleGoalInputChange}
-                                  placeholder="e.g. 80kg, 35min, 3 sessions"
-                                  className="w-full px-3 py-2 bg-white border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent text-gray-700"
-                                  required
-                                />
+                                >
+                                  <option value="strength">Strength</option>
+                                  <option value="endurance">Endurance</option>
+                                  <option value="nutrition">Nutrition</option>
+                                  <option value="weight">Weight</option>
+                                </select>
                               </div>
                             </div>
                             
@@ -2852,13 +2599,16 @@ This will help me create a personalized plan for you.`
                                       // Reset input
                                       input.value = '';
                                       
-                                      // Show success message
-                                      setModalContent({
-                                        title: 'Success',
-                                        content: <p>Goal progress has been updated!</p>,
-                                        onConfirm: () => setShowModal(false)
-                                      });
-                                      setShowModal(true);
+                                      // Show a brief toast notification instead of a modal
+                                      const toast = document.createElement('div');
+                                      toast.className = 'fixed bottom-4 right-4 bg-green-50 text-green-800 px-4 py-2 rounded-lg shadow-md text-sm border border-green-200 z-50';
+                                      toast.textContent = 'Goal progress updated';
+                                      document.body.appendChild(toast);
+                                      
+                                      // Remove toast after 2 seconds
+                                      setTimeout(() => {
+                                        toast.remove();
+                                      }, 2000);
                                     }
                                   }
                                 }}
@@ -3046,47 +2796,50 @@ This will help me create a personalized plan for you.`
                               </p>
                             </div>
                             
-                            <button 
-                              onClick={() => {
-                                // Track BMI history
+                            <div className="mt-6">
+                              <div className="flex justify-between items-center mb-3">
+                                <h4 className="font-semibold text-gray-800">BMI History</h4>
+                                <button 
+                                  onClick={handleDeleteBmiHistory}
+                                  className="text-red-600 hover:text-red-800 text-sm font-medium flex items-center"
+                                >
+                                  <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                  </svg>
+                                  Delete History
+                                </button>
+                              </div>
+                              
+                              {(() => {
                                 const bmiHistory = JSON.parse(localStorage.getItem('bmiHistory') || '[]');
-                                setModalContent({
-                                  title: 'BMI History',
-                                  content: bmiHistory.length > 0 ? (
-                                    <div className="max-h-80 overflow-y-auto">
-                                      <table className="min-w-full divide-y divide-gray-200">
-                                        <thead className="bg-gray-50">
-                                          <tr>
-                                            <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Date</th>
-                                            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">BMI</th>
-                                            <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Weight</th>
+                                return bmiHistory.length > 0 ? (
+                                  <div className="max-h-60 overflow-y-auto border border-gray-200 rounded-lg">
+                                    <table className="min-w-full divide-y divide-gray-200">
+                                      <thead className="bg-gray-50 sticky top-0">
+                                        <tr>
+                                          <th className="px-3 py-2 text-left text-xs font-medium text-gray-500">Date</th>
+                                          <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">BMI</th>
+                                          <th className="px-3 py-2 text-right text-xs font-medium text-gray-500">Weight</th>
+                                        </tr>
+                                      </thead>
+                                      <tbody className="bg-white divide-y divide-gray-200">
+                                        {bmiHistory.map((entry, index) => (
+                                          <tr key={index}>
+                                            <td className="px-3 py-2 text-sm text-gray-800">{entry.date}</td>
+                                            <td className="px-3 py-2 text-sm text-right text-gray-800">{entry.bmi}</td>
+                                            <td className="px-3 py-2 text-sm text-right text-gray-800">{entry.weight} kg</td>
                                           </tr>
-                                        </thead>
-                                        <tbody className="bg-white divide-y divide-gray-200">
-                                          {bmiHistory.map((entry, index) => (
-                                            <tr key={index}>
-                                              <td className="px-3 py-2 text-sm text-gray-800">{entry.date}</td>
-                                              <td className="px-3 py-2 text-sm text-right text-gray-800">{entry.bmi}</td>
-                                              <td className="px-3 py-2 text-sm text-right text-gray-800">{entry.weight} kg</td>
-                                            </tr>
-                                          ))}
-                                        </tbody>
-                                      </table>
-                                    </div>
-                                  ) : (
-                                    <p>No BMI history found. Calculate your BMI to start tracking.</p>
-                                  ),
-                                  onConfirm: () => setShowModal(false)
-                                });
-                                setShowModal(true);
-                              }}
-                              className="text-blue-600 hover:text-blue-800 font-medium flex items-center justify-center w-full"
-                            >
-                              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                              </svg>
-                              View BMI History
-                            </button>
+                                        ))}
+                                      </tbody>
+                                    </table>
+                                  </div>
+                                ) : (
+                                  <div className="text-sm text-gray-500 text-center p-4 bg-gray-50 rounded-lg">
+                                    No BMI history found. Your history will appear here after calculating your BMI.
+                                  </div>
+                                );
+                              })()}
+                            </div>
                           </div>
                         ) : (
                           <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm flex flex-col items-center justify-center h-full">

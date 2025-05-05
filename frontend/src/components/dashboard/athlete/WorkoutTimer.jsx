@@ -9,11 +9,35 @@ const WorkoutTimer = ({ duration, onFinish }) => {
   const parseDuration = useCallback((durationStr) => {
     if (!durationStr) return 0;
     
-    const match = durationStr.match(/(\d+)\s*min/);
+    // Try to match "X min" format
+    let match = durationStr.match(/(\d+)\s*min/i);
     if (match && match[1]) {
       return parseInt(match[1]) * 60; // Convert minutes to seconds
     }
-    return 0;
+    
+    // Try to match "X minutes" format
+    match = durationStr.match(/(\d+)\s*minutes?/i);
+    if (match && match[1]) {
+      return parseInt(match[1]) * 60; // Convert minutes to seconds
+    }
+    
+    // Try to match "X hr Y min" format
+    match = durationStr.match(/(\d+)\s*hr\s*(?:(\d+)\s*min)?/i);
+    if (match) {
+      const hours = parseInt(match[1] || 0);
+      const minutes = parseInt(match[2] || 0);
+      return (hours * 60 * 60) + (minutes * 60);
+    }
+    
+    // Try to match just numbers (assuming minutes)
+    match = durationStr.match(/^(\d+)$/);
+    if (match && match[1]) {
+      return parseInt(match[1]) * 60; // Assume it's minutes
+    }
+    
+    // Default to 30 minutes (1800 seconds) if no format matches
+    console.log("Duration format not recognized, defaulting to 30 min:", durationStr);
+    return 30 * 60;
   }, []);
 
   // Format seconds into MM:SS

@@ -99,12 +99,6 @@ const GoalProgress = ({ goals = [], detailed = false, onUpdateProgress, onDelete
     <div>
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-6 gap-4">
         <div>
-          <h2 className="text-xl font-semibold flex items-center">
-            <svg className="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-            Goal Tracking
-          </h2>
           <p className="text-sm text-gray-500">Track and achieve your fitness targets</p>
         </div>
         
@@ -119,17 +113,7 @@ const GoalProgress = ({ goals = [], detailed = false, onUpdateProgress, onDelete
             </button>
           )}
           
-          {detailed && (
-            <button 
-              onClick={() => setShowForm(prev => !prev)}
-              className="text-sm flex items-center px-3 py-1.5 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 transition-colors"
-            >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-              </svg>
-              {showForm ? 'Cancel' : 'Add Goal'}
-            </button>
-          )}
+          {/* The detailed Add Goal button is removed since it's now handled in the parent component */}
         </div>
       </div>
       
@@ -286,17 +270,6 @@ const GoalProgress = ({ goals = [], detailed = false, onUpdateProgress, onDelete
           </svg>
           <h3 className="mt-3 text-sm font-medium text-gray-900">No goals yet</h3>
           <p className="mt-1 text-sm text-gray-500 max-w-xs mx-auto">Get started by creating your first fitness goal to track your progress.</p>
-          {detailed && (
-            <button 
-              onClick={() => setShowForm(true)}
-              className="mt-4 inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-purple-600 hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500"
-            >
-              <svg className="-ml-1 mr-2 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-              </svg>
-              Create Goal
-            </button>
-          )}
         </motion.div>
       ) : (
         <div className="space-y-4">
@@ -355,7 +328,27 @@ const GoalProgress = ({ goals = [], detailed = false, onUpdateProgress, onDelete
                       {detailed && (
                         <div className="flex items-center gap-2">
                           <button 
-                            onClick={() => onUpdateProgress(goal.id)}
+                            onClick={() => {
+                              // Handle update progress directly
+                              const newCurrent = prompt(`Update progress for "${goal.name}" (current: ${goal.current}):`, goal.current);
+                              if (newCurrent && newCurrent !== goal.current) {
+                                // Calculate new progress (simple calculation)
+                                let newProgress = 0;
+                                const currentNum = parseInt(newCurrent.match(/\d+/)?.[0] || '0');
+                                const targetNum = parseInt(goal.target.match(/\d+/)?.[0] || '100');
+                                
+                                if (goal.target.includes('min') && currentNum > targetNum) {
+                                  // For time goals (lower is better)
+                                  newProgress = Math.min(100, Math.max(0, 100 - ((currentNum - targetNum) / targetNum * 100)));
+                                } else {
+                                  // For regular goals (higher is better)
+                                  newProgress = Math.min(100, Math.max(0, (currentNum / targetNum) * 100));
+                                }
+                                
+                                // Call the update function directly
+                                onUpdateProgress(goal.id, Math.round(newProgress), newCurrent);
+                              }
+                            }}
                             className="text-xs text-purple-600 hover:text-purple-800 mt-1 flex items-center"
                           >
                             <svg className="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
