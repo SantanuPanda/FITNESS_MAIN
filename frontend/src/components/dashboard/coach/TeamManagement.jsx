@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 function TeamManagement() {
   const [teams, setTeams] = useState([]);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [showViewModal, setShowViewModal] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState(null);
   const [newTeam, setNewTeam] = useState({
@@ -79,7 +79,7 @@ function TeamManagement() {
     }
     
     setNewTeam({ name: '', sport: '', members: 0 });
-    setShowAddModal(false);
+    setShowAddForm(false);
   };
 
   const handleDeleteTeam = (id) => {
@@ -113,14 +113,80 @@ function TeamManagement() {
         <h2 className="text-2xl font-bold text-gray-800">Manage Teams</h2>
         <button
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md flex items-center w-full sm:w-auto justify-center"
-          onClick={() => setShowAddModal(true)}
+          onClick={() => setShowAddForm(!showAddForm)}
         >
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
           </svg>
-          Add Team
+          {showAddForm ? 'Cancel' : 'Add Team'}
         </button>
       </div>
+
+      {/* Inline Add Team Form */}
+      {showAddForm && (
+        <div className="bg-white rounded-lg shadow mb-6 p-5">
+          <h3 className="text-lg font-bold mb-4">Add New Team</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
+                Team Name *
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={newTeam.name}
+                onChange={handleInputChange}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder="Enter team name"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="sport">
+                Sport *
+              </label>
+              <input
+                type="text"
+                id="sport"
+                name="sport"
+                value={newTeam.sport}
+                onChange={handleInputChange}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder="Enter sport type"
+                required
+              />
+            </div>
+
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="members">
+                Member Number
+              </label>
+              <input
+                type="number"
+                id="members"
+                name="members"
+                value={newTeam.members}
+                onChange={handleInputChange}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder="Enter initial member count"
+                min="0"
+              />
+            </div>
+          </div>
+          
+          <div className="mt-4 flex justify-end">
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              onClick={handleAddTeam}
+            >
+              Add Team
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Teams List - Desktop view */}
       <div className="bg-white rounded-lg shadow overflow-hidden hidden md:block">
@@ -210,78 +276,6 @@ function TeamManagement() {
           </div>
         )}
       </div>
-
-      {/* Add Team Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-5 sm:p-8 max-w-md w-full">
-            <h3 className="text-xl font-bold mb-4">Add New Team</h3>
-            
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
-                Team Name *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={newTeam.name}
-                onChange={handleInputChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                placeholder="Enter team name"
-                required
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="sport">
-                Sport *
-              </label>
-              <input
-                type="text"
-                id="sport"
-                name="sport"
-                value={newTeam.sport}
-                onChange={handleInputChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                placeholder="Enter sport type"
-                required
-              />
-            </div>
-
-            <div className="mb-6">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="members">
-                Member Number
-              </label>
-              <input
-                type="number"
-                id="members"
-                name="members"
-                value={newTeam.members}
-                onChange={handleInputChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                placeholder="Enter initial member count"
-                min="0"
-              />
-            </div>
-            
-            <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
-              <button
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded order-2 sm:order-1 sm:mr-2"
-                onClick={() => setShowAddModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded order-1 sm:order-2 mb-2 sm:mb-0"
-                onClick={handleAddTeam}
-              >
-                Add Team
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* View Team Modal */}
       {showViewModal && selectedTeam && (

@@ -3,7 +3,7 @@ import React, { useState, useEffect } from 'react';
 function TrainingPlans() {
   const [plans, setPlans] = useState([]);
   const [teamOptions, setTeamOptions] = useState([]);
-  const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showWorkoutModal, setShowWorkoutModal] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
@@ -74,13 +74,13 @@ function TrainingPlans() {
     localStorage.setItem('trainingPlans', JSON.stringify(plans));
   }, [plans]);
 
-  // Check for teams before showing add modal
+  // Check for teams before showing add form
   const handleCreatePlanClick = () => {
     if (teamOptions.length === 0) {
       alert('Please add teams in the "Manage Teams" section before creating a training plan.');
       return;
     }
-    setShowAddModal(true);
+    setShowAddForm(!showAddForm);
   };
 
   const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -136,7 +136,7 @@ function TrainingPlans() {
       description: '',
       workouts: []
     });
-    setShowAddModal(false);
+    setShowAddForm(false);
   };
 
   const handleEditPlan = () => {
@@ -298,9 +298,107 @@ function TrainingPlans() {
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd" />
           </svg>
-          Create Plan
+          {showAddForm ? 'Cancel' : 'Create Plan'}
         </button>
       </div>
+
+      {/* Inline Create Plan Form */}
+      {showAddForm && (
+        <div className="bg-white rounded-lg shadow mb-6 p-5">
+          <h3 className="text-lg font-bold mb-4">Create New Training Plan</h3>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
+                Plan Name *
+              </label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={newPlan.name}
+                onChange={handleInputChange}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder="Enter plan name"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="targetTeam">
+                Target Team *
+              </label>
+              <select
+                id="targetTeam"
+                name="targetTeam"
+                value={newPlan.targetTeam}
+                onChange={handleInputChange}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                required
+              >
+                <option value="">Select a team</option>
+                {teamOptions.map((team, index) => (
+                  <option key={index} value={team}>{team}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="startDate">
+                Start Date *
+              </label>
+              <input
+                type="date"
+                id="startDate"
+                name="startDate"
+                value={newPlan.startDate}
+                onChange={handleInputChange}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                required
+              />
+            </div>
+            
+            <div>
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="endDate">
+                End Date *
+              </label>
+              <input
+                type="date"
+                id="endDate"
+                name="endDate"
+                value={newPlan.endDate}
+                onChange={handleInputChange}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                required
+              />
+            </div>
+            
+            <div className="col-span-1 md:col-span-2">
+              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">
+                Description
+              </label>
+              <textarea
+                id="description"
+                name="description"
+                value={newPlan.description}
+                onChange={handleInputChange}
+                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
+                placeholder="Enter plan description"
+                rows="3"
+              ></textarea>
+            </div>
+          </div>
+          
+          <div className="flex justify-end">
+            <button
+              className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+              onClick={handleAddPlan}
+            >
+              Create Plan
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Training Plans List - Desktop View */}
       <div className="bg-white rounded-lg shadow overflow-hidden hidden md:block">
@@ -467,111 +565,6 @@ function TrainingPlans() {
           ) : (
             <p className="text-sm text-gray-500 italic">No workouts added yet.</p>
           )}
-        </div>
-      )}
-
-      {/* Add Plan Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg p-5 sm:p-8 max-w-md w-full">
-            <h3 className="text-xl font-bold mb-4">Create New Training Plan</h3>
-            
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="name">
-                Plan Name *
-              </label>
-              <input
-                type="text"
-                id="name"
-                name="name"
-                value={newPlan.name}
-                onChange={handleInputChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                placeholder="Enter plan name"
-                required
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="targetTeam">
-                Target Team *
-              </label>
-              <select
-                id="targetTeam"
-                name="targetTeam"
-                value={newPlan.targetTeam}
-                onChange={handleInputChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                required
-              >
-                <option value="">Select a team</option>
-                {teamOptions.map((team, index) => (
-                  <option key={index} value={team}>{team}</option>
-                ))}
-              </select>
-            </div>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="startDate">
-                  Start Date *
-                </label>
-                <input
-                  type="date"
-                  id="startDate"
-                  name="startDate"
-                  value={newPlan.startDate}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  required
-                />
-              </div>
-              <div>
-                <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="endDate">
-                  End Date *
-                </label>
-                <input
-                  type="date"
-                  id="endDate"
-                  name="endDate"
-                  value={newPlan.endDate}
-                  onChange={handleInputChange}
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                  required
-                />
-              </div>
-            </div>
-            
-            <div className="mb-6">
-              <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="description">
-                Description
-              </label>
-              <textarea
-                id="description"
-                name="description"
-                value={newPlan.description}
-                onChange={handleInputChange}
-                className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                placeholder="Enter plan description"
-                rows="3"
-              ></textarea>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row sm:justify-end gap-2">
-              <button
-                className="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded order-2 sm:order-1 sm:mr-2"
-                onClick={() => setShowAddModal(false)}
-              >
-                Cancel
-              </button>
-              <button
-                className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded order-1 sm:order-2 mb-2 sm:mb-0"
-                onClick={handleAddPlan}
-              >
-                Create Plan
-              </button>
-            </div>
-          </div>
         </div>
       )}
 

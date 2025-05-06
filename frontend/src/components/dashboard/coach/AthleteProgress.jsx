@@ -290,6 +290,7 @@ function AthleteProgress() {
   const handleOpenStatsModal = () => {
     if (!selectedAthlete) return;
     
+    // Get the most recent stat values
     setEditStats({
       speed: selectedAthlete.stats.speed[selectedAthlete.stats.speed.length - 1],
       endurance: selectedAthlete.stats.endurance[selectedAthlete.stats.endurance.length - 1],
@@ -303,9 +304,13 @@ function AthleteProgress() {
   // Handle stats input change
   const handleStatsChange = (e) => {
     const { name, value } = e.target;
+    // Ensure the value is within bounds or default to current value
+    const numValue = parseInt(value) || 0;
+    const boundedValue = Math.min(Math.max(numValue, 50), 100);
+    
     setEditStats({
       ...editStats,
-      [name]: parseInt(value) || 0
+      [name]: boundedValue
     });
   };
 
@@ -313,17 +318,17 @@ function AthleteProgress() {
   const handleUpdateStats = () => {
     if (!selectedAthlete) return;
     
-    // Validate input values (must be between 50-100)
+    // Validate all stats are within range
     for (const stat in editStats) {
       if (editStats[stat] < 50 || editStats[stat] > 100) {
-        alert('All stats must be between 50 and 100');
+        alert(`${stat.charAt(0).toUpperCase() + stat.slice(1)} must be between 50 and 100`);
         return;
       }
     }
     
     const updatedAthletes = athletes.map(athlete => {
       if (athlete.id === selectedAthlete.id) {
-        // Create updated stats by shifting array and adding new value
+        // Create updated stats by pushing new values
         const updatedStats = {
           speed: [...athlete.stats.speed.slice(1), editStats.speed],
           endurance: [...athlete.stats.endurance.slice(1), editStats.endurance],
@@ -331,10 +336,14 @@ function AthleteProgress() {
           technique: [...athlete.stats.technique.slice(1), editStats.technique],
         };
         
+        // Format the current date for the activity log
+        const today = new Date();
+        const dateStr = today.toLocaleDateString();
+        
         return {
           ...athlete,
           stats: updatedStats,
-          recentActivity: 'Stats updated on ' + new Date().toLocaleDateString()
+          recentActivity: `Stats updated on ${dateStr}`
         };
       }
       return athlete;
@@ -346,7 +355,11 @@ function AthleteProgress() {
     const updatedAthlete = updatedAthletes.find(a => a.id === selectedAthlete.id);
     setSelectedAthlete(updatedAthlete);
     
+    // Close modal and show confirmation 
     setShowStatsModal(false);
+    
+    // Show feedback to user
+    alert("Stats updated successfully!");
   };
 
   // Generate chart data for selected athlete
@@ -866,6 +879,7 @@ function AthleteProgress() {
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 min="50"
                 max="100"
+                required
               />
             </div>
             
@@ -882,6 +896,7 @@ function AthleteProgress() {
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 min="50"
                 max="100"
+                required
               />
             </div>
             
@@ -898,6 +913,7 @@ function AthleteProgress() {
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 min="50"
                 max="100"
+                required
               />
             </div>
             
@@ -914,6 +930,7 @@ function AthleteProgress() {
                 className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
                 min="50"
                 max="100"
+                required
               />
             </div>
             
