@@ -78,11 +78,11 @@ const LoginComponent = ({ onToggleForm }) => {
       const result = await login(email, password);
       
       if (result.success) {
-        setSuccess('Login successful! Redirecting to dashboard...');
+        setSuccess('Login successful! Redirecting to Home...');
         setTimeout(() => {
-          navigate('/dashboard');
+          navigate('/');
         }, 1000);
-      } else {
+      } else {  
         setError(result.error || 'Invalid email or password');
         setSuccess('');
       }
