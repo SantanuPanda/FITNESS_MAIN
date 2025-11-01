@@ -14,4 +14,16 @@ services:
       - key: MONGODB_URI
         value: mongodb+srv://ADMIN:Dyi5HSNTHNdiV0QD@test.doecbiu.mongodb.net/fitness
       - key: JWT_SECRET
-        value: fitness_secret_key_123 
+        value: r6s9ji8ngmqfartokml04g
+      - key: EMAIL_HOST
+        value: smtp.gmail.com
+      - key: EMAIL_PORT
+        value: 587
+      - key: EMAIL_SECURE
+        value: "false"
+      - key: EMAIL_USER
+        value: santanupanda445@gmail.com
+      - key: EMAIL_PASSWORD
+        value: "hidu xvac vqxd unpo"
+      - key: EMAIL_FROM
+        value: '"Fitness App" <santanupanda445@gmail.com>'
