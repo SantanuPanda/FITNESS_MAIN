@@ -10,8 +10,6 @@ const __dirname = path.dirname(__filename);
 const envContent = `# Server Configuration
 NODE_ENV=production
 PORT=5000
-
-# MongoDB Configuration
 MONGODB_URI=mongodb+srv://ADMIN:Dyi5HSNTHNdiV0QD@test.doecbiu.mongodb.net/fitness
 
 # JWT Configuration
