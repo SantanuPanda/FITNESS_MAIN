@@ -69,7 +69,7 @@ const mealSchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Middleware to calculate totals
+
 mealSchema.pre('save', function(next) {
   let totalCal = 0;
   let totalPro = 0;
